@@ -1,0 +1,195 @@
+{
+  "id": "MunjizSlaWatchdog",
+  "name": "Munjiz · SLA watchdog",
+  "nodes": [
+    {
+      "id": "9e4d71f4-388e-5ac4-a35e-ea06af9f836b",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        200
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f9d5b092-dafb-5160-873b-5479cb1ca2db",
+      "name": "Run now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        380
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "bf6340f4-9ad8-54cd-b721-051ca4831565",
+      "name": "Parts waiting > 30 min",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        280
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.MUNJIZ_API_URL }}/api/subrequests/pending",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Munjiz-Token",
+              "value": "={{ $env.MUNJIZ_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "older_than_minutes",
+              "value": "30"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7ebe4be6-1f81-5e64-87c0-60d6d7ab839f",
+      "name": "Anything overdue?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "ac8c96da-40c2-50cc-9be0-5ef64bff7fac",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "54b8b93b-b279-5ce2-8ef3-755a4842d49b",
+      "name": "Compose escalations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        200
+      ],
+      "parameters": {
+        "jsCode": "// One escalation per part waiting longer than the target.\nreturn $input.first().json.items.map((p) => ({\n  json: { desk: p.desk, sub_id: p.id, ticket_id: p.ticket_id,\n          text: `${p.id} for ${p.pavilion} has waited ${p.waiting_minutes} min at ${p.desk}. Please review.` },\n}));"
+      }
+    },
+    {
+      "id": "a2b8625f-8621-5c51-8c39-6c0cfb502094",
+      "name": "Escalate to desk supervisor",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        960,
+        200
+      ],
+      "parameters": {},
+      "notes": "Connect Slack, Teams or email here",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Parts waiting > 30 min",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run now": {
+      "main": [
+        [
+          {
+            "node": "Parts waiting > 30 min",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parts waiting > 30 min": {
+      "main": [
+        [
+          {
+            "node": "Anything overdue?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything overdue?": {
+      "main": [
+        [
+          {
+            "node": "Compose escalations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose escalations": {
+      "main": [
+        [
+          {
+            "node": "Escalate to desk supervisor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Riyadh"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

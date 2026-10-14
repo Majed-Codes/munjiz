@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #0B6B4F; --green-2: #12805F; --deep: #084A37; --mint: #E8F5EF; --mint-2: #D1FAE5;
+    --ink: #0F172A; --ink-2: #334155; --muted: #64748B; --line: #E2E8F0; --bg: #F4F6F5; --white: #fff;
+    --amber-bg: #FFFBEB; --amber-line: #FDE68A; --amber-ink: #92400E;
+    --red-bg: #FEF2F2; --red-line: #FECACA; --red-ink: #991B1B;
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    --font-ar: "IBM Plex Sans Arabic", "Geeza Pro", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: transparent; font-family: var(--font); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  [dir="rtl"] { font-family: var(--font-ar); }
+
+  #stage { display: flex; justify-content: center; padding: 14px 0 0; overflow: visible; }
+  .device { flex: 0 0 392px; width: 392px; height: 800px; border-radius: 56px; padding: 11px; background: #0B1220;
+    box-shadow: 0 0 0 2px #2B3445, 0 0 0 4px #0B1220, 0 18px 30px rgba(2, 6, 23, 0.22), 0 6px 12px rgba(2, 6, 23, 0.14);
+    transform-origin: top center; position: relative; }
+  .device::before, .device::after { content: ""; position: absolute; width: 3px; background: #1F2937; border-radius: 2px; }
+  .device::before { left: -5px; top: 150px; height: 56px; }
+  .device::after { right: -5px; top: 190px; height: 90px; }
+  .screen { width: 100%; height: 100%; border-radius: 46px; overflow: hidden; background: var(--bg);
+    position: relative; display: flex; flex-direction: column; }
+
+  /* Status bar + dynamic island */
+  .statusbar { height: 48px; flex: 0 0 48px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 26px 0 36px; font-weight: 600; font-size: 15px; position: relative; z-index: 5; }
+  .island { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); width: 100px; height: 30px;
+    background: #000; border-radius: 20px; }
+  .sys { display: flex; gap: 5px; align-items: center; }
+  .sys svg { display: block; }
+
+  #view { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth; }
+  #view::-webkit-scrollbar { width: 0; }
+
+  /* Home */
+  .home { padding: 4px 18px 18px; }
+  .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; color: var(--green); }
+  .hello { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 14px; }
+  .hello h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+  .avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--mint); color: var(--green);
+    display: grid; place-items: center; font-weight: 800; font-size: 14px; }
+  .pav { border-radius: 22px; padding: 16px 16px 14px; color: #fff; position: relative; overflow: hidden;
+    background: radial-gradient(120% 140% at 100% 0%, #1A9A72 0%, var(--green) 45%, var(--deep) 100%);
+    box-shadow: 0 12px 24px rgba(11, 107, 79, 0.28); }
+  .pav::after { content: ""; position: absolute; right: -40px; bottom: -60px; width: 180px; height: 180px; border-radius: 50%;
+    border: 26px solid rgba(255, 255, 255, 0.07); }
+  .pav .type { font-size: 12px; opacity: 0.8; }
+  .pav .name { font-size: 20px; font-weight: 800; margin: 2px 0 10px; }
+  .pav .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.22); }
+  .feature { margin-top: 14px; background: #fff; border-radius: 22px; padding: 16px; border: 1px solid var(--line);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05); }
+  .feature .top { display: flex; gap: 12px; align-items: center; }
+  .appicon { width: 46px; height: 46px; border-radius: 14px; flex: 0 0 46px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--green-2), var(--deep)); color: #fff; font-weight: 900; font-size: 22px;
+    box-shadow: 0 6px 14px rgba(11, 107, 79, 0.3); }
+  .feature h2 { font-size: 17px; font-weight: 800; }
+  .feature h2 .ar { font-family: var(--font-ar); font-weight: 700; color: var(--green); }
+  .feature p { font-size: 13px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+  .cta { margin-top: 14px; width: 100%; height: 46px; border-radius: 14px; background: var(--green); color: #fff;
+    font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 8px 18px rgba(11, 107, 79, 0.3); transition: transform 0.12s; }
+  .cta:active { transform: scale(0.98); }
+  .section { margin: 20px 2px 8px; display: flex; justify-content: space-between; align-items: baseline; }
+  .section h3 { font-size: 15px; font-weight: 800; }
+  .section span { font-size: 12px; color: var(--muted); }
+  .empty { background: #fff; border: 1px dashed var(--line); border-radius: 16px; padding: 14px; font-size: 13px; color: var(--muted); text-align: center; }
+  .req { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; margin-bottom: 8px;
+    display: block; width: 100%; text-align: left; }
+  .req .l1 { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 14px; }
+  .req .l2 { font-size: 12.5px; color: var(--muted); margin: 3px 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar { display: flex; gap: 4px; }
+  .bar i { flex: 1; height: 5px; border-radius: 999px; background: var(--line); transition: background 0.5s; }
+  .bar i.approved { background: var(--green); } .bar i.rejected { background: #DC2626; }
+  .more { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .tile { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 10px 4px; text-align: center;
+    font-size: 11px; color: var(--muted); opacity: 0.6; }
+  .tile svg { display: block; margin: 0 auto 4px; }
+  .note { font-size: 10.5px; color: #94A3B8; margin-top: 6px; text-align: center; }
+
+  /* Chat */
+  .chathead { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 10px; padding: 6px 14px 10px;
+    background: rgba(244, 246, 245, 0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .chathead .back { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--green); }
+  .chathead .appicon { width: 36px; height: 36px; flex-basis: 36px; border-radius: 11px; font-size: 17px; box-shadow: none; }
+  .chathead .t { font-weight: 800; font-size: 15px; line-height: 1.1; }
+  .chathead .t .ar { font-family: var(--font-ar); color: var(--green); }
+  .chathead .s { font-size: 11.5px; color: var(--green); display: flex; align-items: center; gap: 5px; }
+  .chathead .s::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #22C55E; }
+  .msgs { padding: 14px 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .day { align-self: center; font-size: 11px; color: var(--muted); background: #fff; border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px 10px; }
+  .msg { max-width: 86%; padding: 10px 13px; border-radius: 20px; font-size: 14.5px; line-height: 1.42; word-wrap: break-word; }
+  .anim { animation: rise 0.28s ease-out both; }
+  .anim .desk { animation: rise 0.3s ease-out both; }
+  .msg.user { align-self: flex-end; background: var(--green); color: #fff; border-bottom-right-radius: 6px; }
+  .msg.bot { align-self: flex-start; background: #fff; border: 1px solid var(--line); border-bottom-left-radius: 6px; }
+  .msg[dir="rtl"].user { border-bottom-right-radius: 20px; border-bottom-left-radius: 6px; }
+  .msg.wide { max-width: 94%; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .desk { border-radius: 14px; padding: 9px 11px; margin-top: 8px; border: 1px solid; }
+  .desk .hd { display: flex; align-items: center; gap: 7px; font-weight: 800; font-size: 13px; }
+  .desk .hd .st { margin-inline-start: auto; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+  .desk .bd { font-size: 12.5px; color: var(--ink-2); margin-top: 4px; line-height: 1.4; }
+  .desk .nt { font-size: 11.5px; color: #1D4ED8; margin-top: 4px; }
+  .desk.ok { background: #F0FDF7; border-color: #A7F3D0; } .desk.ok .st { background: var(--mint-2); color: #065F46; }
+  .desk.missing { background: var(--amber-bg); border-color: var(--amber-line); } .desk.missing .st { background: #FEF3C7; color: var(--amber-ink); }
+  .desk.blocked { background: var(--red-bg); border-color: var(--red-line); } .desk.blocked .st { background: #FEE2E2; color: var(--red-ink); }
+  .q { margin-top: 8px; font-weight: 700; }
+  .typing { align-self: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 20px; border-bottom-left-radius: 6px;
+    padding: 12px 14px; display: flex; gap: 4px; }
+  .typing i { width: 7px; height: 7px; border-radius: 50%; background: #94A3B8; animation: blink 1.2s infinite; }
+  .typing i:nth-child(2) { animation-delay: 0.2s; } .typing i:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+  .welcome { text-align: center; padding: 18px 10px 6px; }
+  .welcome .appicon { margin: 0 auto 10px; width: 56px; height: 56px; border-radius: 18px; font-size: 26px; }
+  .welcome h2 { font-size: 18px; font-weight: 800; }
+  .welcome p { font-size: 13px; color: var(--muted); margin: 4px 8px 12px; line-height: 1.4; }
+  .sugg { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .sugg button { font-size: 12.5px; font-weight: 600; color: var(--green); background: #fff; border: 1px solid #BBE5D3;
+    padding: 7px 11px; border-radius: 999px; }
+
+  /* Ticket */
+  .ticket { align-self: stretch; background: #fff; border-radius: 20px; padding: 14px; border: 1px solid var(--line);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08); }
+  .ticket.anim { animation: rise 0.35s ease-out both; }
+  .ticket .top { display: flex; justify-content: space-between; align-items: center; }
+  .ticket .lbl { font-size: 10.5px; font-weight: 800; letter-spacing: 0.14em; color: var(--muted); }
+  .ticket .id { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+  .ticket .bar { margin: 12px 0 6px; } .ticket .bar i { height: 7px; }
+  .ticket .row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #F1F5F9; }
+  .ticket .row:first-of-type { border-top: none; }
+  .ticket .ic { width: 32px; height: 32px; border-radius: 10px; background: #F1F5F9; display: grid; place-items: center; font-size: 16px; flex: 0 0 32px; }
+  .ticket .nm { font-weight: 700; font-size: 13.5px; } .ticket .who { font-size: 11.5px; color: var(--muted); }
+  .ticket .row .pill { margin-inline-start: auto; }
+  .ticket .foot { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .ticket .done { margin-top: 10px; border-radius: 14px; padding: 11px 12px; color: #fff; font-weight: 700; font-size: 13.5px;
+    background: linear-gradient(135deg, var(--green-2), var(--deep)); display: flex; gap: 8px; align-items: center; }
+  .done.anim { animation: pop 0.45s ease-out both; }
+  @keyframes pop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: none; } }
+  .pill { font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+  .pill.pending { background: #FEF3C7; color: var(--amber-ink); }
+  .pill.approved, .pill.completed { background: var(--mint-2); color: #065F46; }
+  .pill.rejected, .pill.action_needed { background: #FEE2E2; color: var(--red-ink); }
+  .pill.in_review { background: #E0F2FE; color: #075985; }
+
+  /* Composer + confirm */
+  #dock { flex: 0 0 auto; padding: 8px 12px 6px; background: rgba(244, 246, 245, 0.96); border-top: 1px solid var(--line); display: none; }
+  #dock.on { display: block; }
+  .confirm { width: 100%; height: 48px; border-radius: 16px; background: var(--green); color: #fff; font-weight: 800; font-size: 15px;
+    margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 18px rgba(11, 107, 79, 0.3);
+    animation: pop 0.35s ease-out both; }
+  .composer { display: flex; align-items: center; gap: 8px; }
+  .composer input { flex: 1; height: 44px; border-radius: 999px; border: 1px solid var(--line); background: #fff; padding: 0 16px;
+    font: inherit; font-size: 14.5px; outline: none; }
+  .composer input:focus { border-color: #8FD3B8; box-shadow: 0 0 0 3px rgba(11, 107, 79, 0.12); }
+  .send { width: 44px; height: 44px; border-radius: 50%; background: var(--green); color: #fff; display: grid; place-items: center; flex: 0 0 44px; }
+  .send:disabled { background: #CBD5E1; }
+  .newreq { width: 100%; height: 44px; border-radius: 999px; border: 1px solid #BBE5D3; color: var(--green); font-weight: 700; background: #fff; }
+
+  /* Tab bar */
+  .tabbar { flex: 0 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 10px 24px; background: #fff; border-top: 1px solid var(--line); }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 600; color: #94A3B8; }
+  .tab.on { color: var(--green); }
+  .tab.off { opacity: 0.45; cursor: default; }
+  .tab .badge { position: absolute; top: -5px; right: -11px; background: #EF4444; color: #fff; font-size: 9.5px; font-weight: 800;
+    min-width: 16px; height: 16px; border-radius: 8px; display: grid; place-items: center; padding: 0 4px; }
+  .tab .ico { position: relative; }
+  .homebar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 130px; height: 5px; border-radius: 3px; background: #0F172A; opacity: 0.85; }
+
+  /* Push notification */
+  .toast { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 20; background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px); border-radius: 20px; padding: 10px 12px; display: flex; gap: 10px; align-items: center;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18); transform: translateY(-130%); transition: transform 0.45s cubic-bezier(.2, .9, .3, 1.2); }
+  .toast.show { transform: translateY(0); }
+  .toast .appicon { width: 36px; height: 36px; flex-basis: 36px; border-radius: 10px; font-size: 16px; box-shadow: none; }
+  .toast .a { font-size: 11px; color: var(--muted); font-weight: 600; } .toast .b { font-size: 13.5px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="device" id="device">
+    <div class="screen">
+      <div class="statusbar">
+        <span id="clock">14:00</span>
+        <div class="island"></div>
+        <span class="sys">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#0F172A"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#0F172A"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#0F172A"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#0F172A"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0L8 11.5Zm-4.2-4.3L2.4 5.8a8 8 0 0 1 11.2 0l-1.4 1.4a6 6 0 0 0-8.4 0ZM.9 4.3-.5 2.9a12 12 0 0 1 17 0l-1.4 1.4a10 10 0 0 0-14.2 0Z" fill="#0F172A"/></svg>
+          <svg width="27" height="13" viewBox="0 0 27 13"><rect x="0.5" y="0.5" width="22" height="12" rx="3.5" stroke="#0F172A" opacity="0.4" fill="none"/><rect x="2" y="2" width="17" height="9" rx="2" fill="#0F172A"/><rect x="24" y="4" width="2" height="5" rx="1" fill="#0F172A" opacity="0.5"/></svg>
+        </span>
+      </div>
+      <div id="view"></div>
+      <div id="dock"></div>
+      <nav class="tabbar" id="tabbar"></nav>
+      <div class="homebar"></div>
+      <div class="toast" id="toast"><div class="appicon">✓</div><div><div class="a">MUNJIZ · now</div><div class="b" id="toastText"></div></div></div>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const H = 800 + 50;
+  let data = null, screen = "home", openTicket = null, busy = false, sentCount = 0, lastKey = "", lastForce = null;
+  let prevStatus = {}, toastTimer = null, draft = "", shownMsgs = 0, shownTicket = null, shownDone = null;
+
+  // --- Streamlit component bridge (v1 protocol) ---
+  const post = (type, extra) => window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type }, extra), "*");
+  const emit = (action, text) => post("streamlit:setComponentValue", {
+    value: { action, text: text || "", nonce: Date.now() + Math.random() }, dataType: "json" });
+  let scale = 1, lastFrameH = 0;
+  function fit() {
+    let avail = 860;
+    try { avail = window.parent.innerHeight - 150; } catch (e) {}
+    scale = Math.max(0.55, Math.min(1, avail / 850, (window.innerWidth - 16) / 400));
+    document.getElementById("device").style.transform = `scale(${scale})`;
+    document.getElementById("stage").style.height = `${H * scale}px`;
+    const h = Math.ceil(H * scale) + 4;
+    if (h !== lastFrameH) { lastFrameH = h; post("streamlit:setFrameHeight", { height: h }); }
+  }
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(document.documentElement);
+  window.addEventListener("resize", fit);
+  try { window.parent.addEventListener("resize", fit); } catch (e) {}
+
+  window.addEventListener("message", (ev) => {
+    if (!ev.data || ev.data.type !== "streamlit:render") return;
+    const d = ev.data.args.data;
+    if (!d) return;
+    document.getElementById("clock").textContent = d.clock;
+    fit();
+    if (d.force && d.force.nonce !== lastForce) { lastForce = d.force.nonce; screen = d.force.screen; }
+    if (d.messages.length < shownMsgs) { shownMsgs = 0; shownTicket = null; prevStatus = {}; }  // new request
+    if (d.messages.length > sentCount) busy = false;   // the reply arrived
+    sentCount = d.messages.length;
+    notify(d);
+    const stable = d.ticket ? Object.assign({}, d.ticket, { foot: "" }) : null;
+    const key = JSON.stringify([d.messages, d.ready, stable, d.tickets, d.pavilion, screen, busy]);
+    data = d;
+    if (key !== lastKey) { lastKey = key; render(); }
+    else refreshTicket();
+  });
+
+  // --- helpers ---
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const md = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
+  const ICONS = {
+    home: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+    munjiz: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/><path d="m8.5 12 2.3 2.3L15.5 9.6"/></svg>',
+    requests: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 5v12" stroke-dasharray="2 2.5"/></svg>',
+    pass: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.4 1.8-2 3-2s2.4.6 3 2M15 10h3M15 13h3"/></svg>',
+    map: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+    cal: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>',
+    team: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c.8-3 3.2-5 6-5s5.2 2 6 5M16 5a3 3 0 0 1 0 6M18 15c1.6.6 2.6 2.4 3 5"/></svg>',
+    back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
+    send: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+    arrow: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  };
+
+  function go(s, ticketId) { screen = s; openTicket = ticketId || null; render(); }
+
+  function notify(d) {
+    const t = d.ticket;
+    if (!t) { prevStatus = {}; return; }
+    for (const s of t.subs) {
+      const before = prevStatus[s.id];
+      if (before && before !== s.status && s.status !== "pending") {
+        toast(s.status === "approved" ? `${s.title} approved` : `${s.title}: ${s.label}`);
+      }
+      prevStatus[s.id] = s.status;
+    }
+  }
+  function toast(text) {
+    const el = document.getElementById("toast");
+    document.getElementById("toastText").textContent = text;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+  }
+
+  // --- views ---
+  function refreshTicket() {
+    const el = document.querySelector("#view .ticket");
+    const t = screen === "chat" ? data.ticket : (openTicket ? data.all_tickets[openTicket] : null);
+    if (el && t) { const f = el.querySelector(".foot"); if (f) f.textContent = t.foot; }
+  }
+
+  function ticketHTML(t) {
+    const firstTime = shownTicket !== t.id; shownTicket = t.id;
+    const doneFirst = t.done && shownDone !== t.id; if (t.done) shownDone = t.id;
+    const bar = t.subs.map((s) => `<i class="${s.status}"></i>`).join("");
+    const rows = t.subs.map((s) => `
+      <div class="row"><div class="ic">${s.icon}</div>
+        <div><div class="nm">${esc(s.title)}</div><div class="who">${esc(s.who)}</div></div>
+        <span class="pill ${s.status}">${esc(s.label)}</span></div>`).join("");
+    return `<div class="ticket ${firstTime ? "anim" : ""}" dir="${t.dir}">
+      <div class="top"><div><div class="lbl">${esc(t.one)}</div><div class="id">${t.id}</div></div>
+      <span class="pill ${t.status}">${esc(t.label)}</span></div>
+      <div class="bar">${bar}</div>${rows}
+      <div class="foot">${esc(t.foot)}</div>
+      ${t.done ? `<div class="done ${doneFirst ? "anim" : ""}">✓ ${esc(t.done)}</div>` : ""}</div>`;
+  }
+
+  function homeView() {
+    const d = data;
+    const reqs = d.tickets.length ? d.tickets.map((t) => `
+      <button class="req" data-ticket="${t.id}">
+        <div class="l1"><span>${t.id}</span><span class="pill ${t.status}">${esc(t.label)}</span></div>
+        <div class="l2">${esc(t.text)}</div>
+        <div class="bar">${t.subs.map((s) => `<i class="${s}"></i>`).join("")}</div></button>`).join("")
+      : `<div class="empty">No requests yet. Ask Munjiz for anything your pavilion needs.</div>`;
+    return `<div class="home">
+      <div class="eyebrow">EXPO 2030 RIYADH</div>
+      <div class="hello"><h1>Good afternoon</h1><div class="avatar">${esc(d.initials)}</div></div>
+      <div class="pav"><div class="type">${esc(d.pavilion_type)}</div><div class="name">${esc(d.pavilion)}</div>
+        <div class="row"><span class="chip">Expo day ${d.expo_day} of ${d.days}</span><span class="chip">${esc(d.role)}</span></div></div>
+      <div class="feature"><div class="top"><div class="appicon">✓</div>
+        <div><h2>Munjiz <span class="ar">· منجز</span></h2><p>Deliveries, worker passes, power. Ask once and every desk gets it.</p></div></div>
+        <button class="cta" data-go="chat">New request ${ICONS.arrow}</button></div>
+      <div class="section"><h3>My requests</h3><span>${d.tickets.length ? d.open_count + " open" : ""}</span></div>${reqs}
+      <div class="section"><h3>More in the app</h3></div>
+      <div class="more">
+        <div class="tile">${ICONS.map}Site map</div><div class="tile">${ICONS.pass}My pass</div>
+        <div class="tile">${ICONS.cal}Events</div><div class="tile">${ICONS.team}Team</div></div>
+      <div class="note">Other app features are outside this prototype</div></div>`;
+  }
+
+  function chatView() {
+    const d = data;
+    let body = "";
+    if (!d.messages.length && !busy) {
+      body = `<div class="welcome"><div class="appicon">✓</div><h2>What does your pavilion need?</h2>
+        <p>Tell me once, in English or Arabic. I'll split it across the desks, check their rules and send one ticket.</p>
+        <div class="sugg"><button data-sugg="I need to bring equipment into our pavilion ">🚚 A delivery</button>
+        <button data-sugg="We need site passes for ">🪪 Worker passes</button>
+        <button data-sugg="We need extra power for ">⚡ Extra power</button>
+        <button data-sugg="أحتاج ">العربية</button></div></div>`;
+    } else {
+      body = `<div class="day">Today · Expo day ${d.expo_day}</div>`;
+      d.messages.forEach((m, idx) => {
+        const a = idx >= shownMsgs ? " anim" : "";
+        if (m.role === "user") { body += `<div class="msg user${a}" dir="${m.dir}">${md(m.text)}</div>`; return; }
+        if (m.cards && m.cards.length) {
+          const cards = m.cards.map((c, i) => `<div class="desk ${c.state}" style="animation-delay:${0.08 * i}s">
+            <div class="hd">${c.icon} ${esc(c.title)}<span class="st">${esc(c.state_label)}</span></div>
+            <div class="bd">${c.body}</div>${c.notes.map((n) => `<div class="nt">ℹ️ ${esc(n)}</div>`).join("")}</div>`).join("");
+          body += `<div class="msg bot wide${a}" dir="${m.dir}">${md(m.intro)}${cards}${m.outro ? `<div class="q">${esc(m.outro)}</div>` : ""}</div>`;
+        } else {
+          body += `<div class="msg bot${a}" dir="${m.dir}">${md(m.text)}</div>`;
+        }
+      });
+      shownMsgs = d.messages.length;
+      if (busy) body += `<div class="typing"><i></i><i></i><i></i></div>`;
+      if (d.ticket) body += ticketHTML(d.ticket);
+    }
+    return `<div class="chathead"><button class="back" data-go="home">${ICONS.back}</button><div class="appicon">✓</div>
+      <div><div class="t">Munjiz <span class="ar">· منجز</span></div><div class="s">Request agent · online</div></div></div>
+      <div class="msgs" id="msgs">${body}</div>`;
+  }
+
+  function requestsView() {
+    const d = data;
+    if (openTicket) {
+      const t = d.all_tickets[openTicket];
+      return `<div class="chathead"><button class="back" data-go="requests">${ICONS.back}</button>
+        <div><div class="t">${openTicket}</div><div class="s">Live status</div></div></div>
+        <div class="msgs">${t ? ticketHTML(t) : '<div class="empty">This ticket was cleared.</div>'}</div>`;
+    }
+    const list = d.tickets.length ? d.tickets.map((t) => `
+      <button class="req" data-ticket="${t.id}"><div class="l1"><span>${t.id}</span><span class="pill ${t.status}">${esc(t.label)}</span></div>
+      <div class="l2">${esc(t.text)}</div><div class="bar">${t.subs.map((s) => `<i class="${s}"></i>`).join("")}</div></button>`).join("")
+      : `<div class="empty">No requests yet.</div>`;
+    return `<div class="home"><div class="eyebrow">EXPO 2030 RIYADH</div><div class="hello"><h1>My requests</h1></div>${list}</div>`;
+  }
+
+  function dockHTML() {
+    const d = data;
+    if (screen !== "chat") return "";
+    if (d.ticket) return `<button class="newreq" data-act="new">+ New request</button>`;
+    const confirm = d.ready && !busy ? `<button class="confirm" data-act="confirm">${esc(d.confirm_label)} ${ICONS.arrow}</button>` : "";
+    return `${confirm}<div class="composer"><input id="inp" placeholder="Message Munjiz…" autocomplete="off" value="${esc(draft)}">
+      <button class="send" id="sendBtn" ${busy ? "disabled" : ""}>${ICONS.send}</button></div>`;
+  }
+
+  function tabsHTML() {
+    const open = data.open_count;
+    const tab = (id, label, icon, extra = "") => `<button class="tab ${screen === id ? "on" : ""}" data-go="${id}">
+      <span class="ico">${icon}${extra}</span>${label}</button>`;
+    return tab("home", "Home", ICONS.home) + tab("chat", "Munjiz", ICONS.munjiz)
+      + tab("requests", "Requests", ICONS.requests, open ? `<span class="badge">${open}</span>` : "")
+      + `<span class="tab off">${ICONS.pass}My pass</span>`;
+  }
+
+  function render() {
+    if (!data) return;
+    const view = document.getElementById("view");
+    const dock = document.getElementById("dock");
+    const wasChat = view.dataset.screen === "chat";
+    const keepScroll = wasChat && screen === "chat" ? view.scrollTop : null;
+    view.innerHTML = screen === "home" ? homeView() : screen === "chat" ? chatView() : requestsView();
+    view.dataset.screen = screen;
+    dock.innerHTML = dockHTML();
+    dock.classList.toggle("on", screen === "chat");
+    document.getElementById("tabbar").innerHTML = tabsHTML();
+    if (screen === "chat") {
+      // Newest item (reply, ticket, approval) always comes into view.
+      if (wasChat && keepScroll !== null) { view.style.scrollBehavior = "auto"; view.scrollTop = keepScroll; }
+      view.style.scrollBehavior = wasChat ? "smooth" : "auto";
+      view.scrollTop = view.scrollHeight;
+      const inp = document.getElementById("inp");
+      if (inp) {
+        inp.addEventListener("input", (e) => { draft = e.target.value; });
+        inp.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+      }
+    } else { view.scrollTop = 0; }
+  }
+
+  function send() {
+    const inp = document.getElementById("inp");
+    const text = (inp ? inp.value : draft).trim();
+    if (!text || busy) return;
+    draft = "";
+    busy = true;
+    data.messages = data.messages.concat([{ role: "user", text, dir: /[؀-ۿ]/.test(text) ? "rtl" : "ltr" }]);
+    sentCount = data.messages.length;
+    render();
+    emit("send", text);
+  }
+
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-go],[data-ticket],[data-act],[data-sugg],#sendBtn");
+    if (!el) return;
+    if (el.id === "sendBtn") return send();
+    if (el.dataset.go) return go(el.dataset.go === "chat" ? "chat" : el.dataset.go);
+    if (el.dataset.ticket) {
+      if (data.ticket && data.ticket.id === el.dataset.ticket) return go("chat");
+      return go("requests", el.dataset.ticket);
+    }
+    if (el.dataset.sugg) { draft = el.dataset.sugg; render(); const i = document.getElementById("inp"); if (i) { i.focus(); i.setSelectionRange(draft.length, draft.length); } return; }
+    if (el.dataset.act === "confirm") { busy = true; render(); return emit("confirm"); }
+    if (el.dataset.act === "new") { prevStatus = {}; shownMsgs = 0; shownTicket = null; return emit("new"); }
+  });
+
+  post("streamlit:componentReady", { apiVersion: 1 });
+  fit();
+})();
+</script>
+</body>
+</html>
