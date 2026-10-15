@@ -28,7 +28,7 @@ DESKS = ["logistics", "security", "facilities"]
 
 # "local" = offline parser (free, deterministic). "claude" = Claude tool use.
 BACKEND = os.environ.get("MUNJIZ_BACKEND", "local")
-CLAUDE_MODEL = os.environ.get("MUNJIZ_MODEL", "claude-opus-5-5")
+CLAUDE_MODEL = os.environ.get("MUNJIZ_MODEL", "claude-sonnet-5-5")
 
 # n8n integration. Empty webhook URL = integration off; the app works the same without it.
 N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL", "")
