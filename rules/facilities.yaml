@@ -1,7 +1,7 @@
 # Facilities & Utilities desk: temporary power connections to pavilions.
 # SIMULATED rules, modelled on typical World Expo participant regulations.
 desk: facilities
-icon: "⚡"
+icon: zap
 title: {en: Facilities & Utilities, ar: المرافق والخدمات}
 
 fields:

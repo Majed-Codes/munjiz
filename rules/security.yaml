@@ -1,7 +1,7 @@
 # Accreditation & Security desk: temporary site permits for pavilion workers and contractors.
 # SIMULATED rules, modelled on typical World Expo participant regulations.
 desk: security
-icon: "🛂"
+icon: id-card
 title: {en: Accreditation & Security, ar: الاعتماد والأمن}
 
 fields:

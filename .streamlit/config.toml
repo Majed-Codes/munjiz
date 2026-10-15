@@ -1,20 +1,22 @@
 [theme]
-# "Night at the Expo": dark stage, Expo emerald, desert gold. Extra styling lives in views/common.py.
+# shadcn/ui "zinc" dark. Component styling (cards, badges, buttons) lives in views/common.py.
 base = "dark"
-primaryColor = "#2FBF8A"
-backgroundColor = "#06120E"
-secondaryBackgroundColor = "#10261D"
-textColor = "#EAF3EE"
-linkColor = "#7FE0B8"
-borderColor = "#24402F"
+primaryColor = "#FAFAFA"
+backgroundColor = "#09090B"
+secondaryBackgroundColor = "#18181B"
+textColor = "#FAFAFA"
+linkColor = "#FAFAFA"
+borderColor = "#27272A"
 showWidgetBorder = true
-baseRadius = "12px"
-codeTextColor = "#8FE6C2"
-codeBackgroundColor = "#10261D"
-dataframeHeaderBackgroundColor = "#10261D"
-dataframeBorderColor = "#24402F"
-font = "'IBM Plex Sans', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-headingFont = "Rubik, 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+baseRadius = "6px"
+baseFontSize = 14
+codeTextColor = "#FAFAFA"
+codeBackgroundColor = "#18181B"
+dataframeHeaderBackgroundColor = "#09090B"
+dataframeBorderColor = "#27272A"
+font = "Geist, 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+headingFont = "Geist, 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+codeFont = "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
 
 [client]
 toolbarMode = "minimal"

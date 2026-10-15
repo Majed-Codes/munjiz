@@ -6,7 +6,7 @@ from munjiz import config, conflicts, tickets
 from munjiz.agent import desk_title
 from munjiz.rules import check_desk, rule_count
 from munjiz.users import DESK_STAFF, SUPERVISOR
-from views.common import ago, describe_sub, page_header, pill, sla_pill
+from views.common import ago, describe_sub, desk_icon, icon, page_header, pill, sla_pill
 
 user = st.session_state.user
 
@@ -27,7 +27,7 @@ page_header("Expo Admin · desk staff", "Desk console",
 
 if user["role"] == DESK_STAFF:
     desk = user["desk"]
-    st.markdown(f"#### {desk_title(desk, 'en')}")
+    st.markdown(f'<div class="cardtitle">{desk_icon(desk)}{desk_title(desk, "en")}</div>', unsafe_allow_html=True)
 else:
     desk = st.segmented_control("Desk", config.DESKS, default="logistics", format_func=lambda d: desk_title(d, "en"),
                                 key="staff_desk") or "logistics"
@@ -46,7 +46,8 @@ def decide(sub_id: str, outcome: str, reason_key: str = "", note_key: str = ""):
     except ValueError:
         return  # already decided (double click or another officer)
     label = {"approve": "approved", "request_change": "sent back for a change", "reject": "rejected"}[outcome]
-    st.toast(f"{sub_id} {label}", icon="✅" if outcome == "approve" else "↩️" if outcome == "request_change" else "❌")
+    st.toast(f"{sub_id} {label}", icon=":material/check_circle:" if outcome == "approve"
+             else ":material/undo:" if outcome == "request_change" else ":material/block:")
 
 
 def worker_reasons(sub: dict) -> list[str]:
@@ -63,7 +64,7 @@ def queue():
     for sub in pending:
         ticket = tickets.get_ticket(sub["ticket_id"])
         info = tickets.sla_info(sub)
-        with st.container(border=True, key=f"glass_q_{sub['id']}"):
+        with st.container(border=True, key=f"card_q_{sub['id']}"):
             version = sub.get("version") or 1
             head = (f"**{sub['id']}** · ticket `{sub['ticket_id']}` · {sub['pavilion']} · "
                     f"submitted {ago(sub.get('submitted_at') or sub['created_at'])} &nbsp; {sla_pill(info)}")
@@ -73,14 +74,15 @@ def queue():
             if sub.get("assigned_to"):
                 st.caption(f"Reassigned by the supervisor to {sub['assigned_to']}")
             if info["state"] == "escalated":
-                st.error("Escalated to the supervisor: this part has waited past the escalation target.", icon="🚨")
+                st.error("Escalated to the supervisor: this part has waited past the escalation target.", icon=":material/error:")
             elif info["state"] == "reminded":
-                st.warning(f"Reminder: this part has waited past the {info['review_minutes']}-minute target.", icon="⏰")
+                st.warning(f"Reminder: this part has waited past the {info['review_minutes']}-minute target.", icon=":material/schedule:")
             st.markdown(describe_sub(sub))
 
             recheck = check_desk(desk, sub["payload"], config.now())
             if recheck.ok:
-                st.markdown(f"🛡️ Desk rules: **passed** ({rule_count(desk)} checks)")
+                st.markdown(f'<div class="line ok">{icon("shield-check")}<span>Desk rules: <b>passed</b> '
+                            f'<span class="muted">· {rule_count(desk)} checks</span></span></div>', unsafe_allow_html=True)
             else:
                 st.warning("Rule check now fails: " + "; ".join(i.message["en"] for i in recheck.blocking))
             clashes = conflicts.check({s["desk"]: s["payload"] for s in ticket["subs"]},
@@ -88,34 +90,38 @@ def queue():
             mine = [c for c in clashes if desk in c.desks]
             blocking = [c for c in mine if c.blocking]
             if blocking:
-                st.warning("Cross-desk clash: " + "; ".join(c.message["en"] for c in blocking), icon="🔀")
+                st.warning("Cross-desk clash: " + "; ".join(c.message["en"] for c in blocking), icon=":material/merge:")
             else:
-                st.markdown(f"🔀 Cross-desk check: **no clashes** with the other desks' parts "
-                            f"({conflicts.count()} checks)")
+                st.markdown(f'<div class="line ok">{icon("git-merge")}<span>Cross-desk check: <b>no clashes</b> with the '
+                            f'other desks\' parts <span class="muted">· {conflicts.count()} checks</span></span></div>',
+                            unsafe_allow_html=True)
             if sub.get("desk_ref"):
-                st.markdown(f"🔗 Routed by n8n to the desk system · ref `{sub['desk_ref']}`")
+                st.markdown(f'<div class="line">{icon("link")}<span>Routed by n8n to the desk system '
+                            f'<span class="muted">· ref</span> <code>{sub["desk_ref"]}</code></span></div>',
+                            unsafe_allow_html=True)
             for note in sub["notes"]:
-                st.info(note["en"], icon="ℹ️")
+                st.info(note["en"], icon=":material/info:")
 
             others = [s for s in ticket["subs"] if s["desk"] != desk]
-            st.markdown("Other desks on this ticket: " + " &nbsp; ".join(
-                f"{desk_title(s['desk'], 'en')} {pill(s['status'])}" for s in others), unsafe_allow_html=True)
+            st.markdown('<div class="line" style="flex-wrap:wrap;margin-top:8px"><span class="muted">Other desks on this ticket</span>'
+                        + "".join(f"<span>{desk_title(s['desk'], 'en')}</span>{pill(s['status'])}" for s in others) + "</div>",
+                        unsafe_allow_html=True)
             with st.expander("Participant's original words"):
                 st.write(sub["request_text"])
 
             sid = sub["id"]
             reasons = worker_reasons(sub) + CHANGE_REASONS[desk] if desk == "security" else CHANGE_REASONS[desk]
             c1, c2 = st.columns([1, 3])
-            c1.button("✅ Approve", key=f"ok_{sid}", type="primary", on_click=decide, args=(sid, "approve"),
+            c1.button("Approve", key=f"ok_{sid}", type="primary", on_click=decide, args=(sid, "approve"),
                       width="stretch")
             with c2.popover("Send back to the participant", width="stretch"):
                 st.selectbox("What needs to change", reasons + REJECT_REASONS[desk], key=f"why_{sid}")
                 st.text_input("Note (optional)", key=f"note_{sid}", placeholder="Shown to the participant")
                 b1, b2 = st.columns(2)
-                b1.button("↩️ Request a change", key=f"chg_{sid}", on_click=decide, width="stretch",
+                b1.button("Request a change", key=f"chg_{sid}", on_click=decide, width="stretch",
                           args=(sid, "request_change", f"why_{sid}", f"note_{sid}"),
                           help="The participant fixes this part only. Other desks' approvals stay.")
-                b2.button("❌ Reject", key=f"no_{sid}", on_click=decide, width="stretch",
+                b2.button("Reject", key=f"no_{sid}", on_click=decide, width="stretch",
                           args=(sid, "reject", f"why_{sid}", f"note_{sid}"),
                           help="This part can't go ahead as asked. The participant can send a new version.")
 

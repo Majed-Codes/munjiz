@@ -23,7 +23,7 @@ def reassign(sub_id: str, key: str):
     officer = st.session_state.get(key)
     if officer:
         tickets.reassign(sub_id, officer, user["id"])
-        st.toast(f"{sub_id} reassigned to {officer}", icon="👤")
+        st.toast(f"{sub_id} reassigned to {officer}", icon=":material/person:")
 
 
 def override(sub_id: str, outcome: str):
@@ -32,7 +32,7 @@ def override(sub_id: str, outcome: str):
                        reason="" if outcome == "approve" else "Supervisor: please check the details and re-send")
     except ValueError:
         return
-    st.toast(f"{sub_id} {'approved' if outcome == 'approve' else 'sent back'} by supervisor override", icon="🛡️")
+    st.toast(f"{sub_id} {'approved' if outcome == 'approve' else 'sent back'} by supervisor override", icon=":material/shield:")
 
 
 @st.fragment(run_every="3s")
@@ -48,7 +48,7 @@ def board():
     c[3].metric("Oldest wait", f"{max((x[2]['waited_minutes'] for x in pending), default=0):.0f} min")
 
     def card(desk, sub, info):
-        with st.container(border=True, key=f"glass_sv_{sub['id']}"):
+        with st.container(border=True, key=f"card_sv_{sub['id']}"):
             st.markdown(f"**{sub['id']}** · {desk_title(desk, 'en')} · ticket `{sub['ticket_id']}` · {sub['pavilion']} "
                         f"&nbsp; {sla_pill(info)}" + (f" · reassigned to **{sub['assigned_to']}**" if sub.get("assigned_to") else ""),
                         unsafe_allow_html=True)
@@ -56,11 +56,11 @@ def board():
             a, b, c2, d = st.columns([2, 1, 1, 1], vertical_alignment="bottom")
             others = [o for o in users.officers(desk) if o != sub.get("assigned_to")]
             a.selectbox("Reassign to", others, key=f"to_{sub['id']}")
-            b.button("👤 Reassign", key=f"re_{sub['id']}", on_click=reassign, args=(sub["id"], f"to_{sub['id']}"),
+            b.button("Reassign", key=f"re_{sub['id']}", on_click=reassign, args=(sub["id"], f"to_{sub['id']}"),
                      width="stretch")
-            c2.button("✅ Approve", key=f"ov_ok_{sub['id']}", on_click=override, args=(sub["id"], "approve"),
+            c2.button("Approve", key=f"ov_ok_{sub['id']}", on_click=override, args=(sub["id"], "approve"),
                       width="stretch", help="Decide on the desk's behalf (recorded as an override)")
-            d.button("↩️ Send back", key=f"ov_chg_{sub['id']}", on_click=override, args=(sub["id"], "request_change"),
+            d.button("Send back", key=f"ov_chg_{sub['id']}", on_click=override, args=(sub["id"], "request_change"),
                      width="stretch")
 
     for title, items, empty in (
@@ -86,6 +86,6 @@ with st.expander("Presenter control · SLA demo"):
                "escalations can be shown in a 5-minute pitch.")
     cols = st.columns(3)
     for col, minutes in zip(cols, (60, 150, 300)):
-        if col.button(f"⏩ +{minutes} min", key=f"age_{minutes}", width="stretch"):
+        if col.button(f"+{minutes} min", key=f"age_{minutes}", width="stretch"):
             tickets.age_pending(minutes)
             st.rerun()

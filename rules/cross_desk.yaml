@@ -2,7 +2,7 @@
 # SIMULATED rules, modelled on typical World Expo participant regulations.
 # Checked by code (munjiz/conflicts.py), never by the LLM. Organisers can change the numbers on the Desk rules page.
 desk: cross_desk
-icon: "🔀"
+icon: git-merge
 title: {en: Cross-desk check, ar: التحقق بين الجهات}
 
 params:

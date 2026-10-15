@@ -15,15 +15,15 @@
 | Time | On screen | Say |
 |---|---|---|
 | 0:00 | Window 1, Participant app | "Two sides, one ticket. This is the participant side: France's pavilion team in the Expo 2030 Riyadh app. Today one request means three desks and three forms." |
-| 0:10 | **① Request** | "They just say it, in English or Arabic." |
+| 0:10 | **1. Request** | "They just say it, in English or Arabic." |
 | 0:20 | Cards turn amber; trace steps 1–4 | "Munjiz split it into three desks, checked 17 desk rules and 4 clash checks in code, and asks **once** for the plate, the IDs and the kW." |
-| 0:35 | **② Answer** → three green cards → **Confirm** | "Gate L2 and a night slot, contractor passes, a 63 A outlet. One ticket, three desks notified at once." |
+| 0:35 | **2. Answer** → three Ready parts → **Confirm** | "Gate L2 and a night slot, contractor passes, a 63 A outlet. One ticket, three desks notified at once." |
 | 0:50 | Window 2, Accreditation desk console | "This is the Expo Admin side. The desk sees only its part, already checked against its rules and the other desks' parts." |
 | 1:00 | **Send back to the participant** → "John Smith's ID could not be verified" → **Request a change**; approve Logistics and Facilities | "A person decides. Here one passport needs fixing." |
 | 1:10 | Window 1: Munjiz says which part came back; ticket **Partially approved** | "The other parts stay approved. Munjiz asks for that part only." |
 | 1:15 | **Fix: new passport** → **Send the fix** | "Only the security part (SEC-…) goes back, as version 2, on the same ticket." |
 | 1:25 | Window 2: v2 → **Approve**; Window 1: **Done** | "One request, one ticket, done, even with a correction." |
-| 1:35 | **↺ New request** → **🔀 Clash demo** | "Every desk says yes on its own, but the truck may only come at night and the utility crews stop at 23:00. Munjiz catches the clash before any desk wastes time, and suggests the fix." Tap **Apply the suggested fix**, then **Confirm & send to 3 desks**. Leave this second ticket pending: the SLA step uses it. |
+| 1:35 | **New request** → **Clash demo** | "Every desk says yes on its own, but the truck may only come at night and the utility crews stop at 23:00. Munjiz catches the clash before any desk wastes time, and suggests the fix." Tap **Apply the suggested fix**, then **Confirm and send to 3 desks**. Leave this second ticket pending: the SLA step uses it. |
 
 Then (3:30 – 4:05):
 - **SLA:** sign in as **Supervisor** → SLA & escalations → open **Presenter control · SLA demo** at the bottom →
@@ -36,7 +36,7 @@ Then (3:30 – 4:05):
   Riyadh scale" numbers. Say clearly that the data is simulated and that 197 participants is the organisers' public figure.
 - (optional) **Desk rules**: "Organisers change a rule here, with no code, and every change is logged."
 
-**Starting over in the participant window:** **↺ New request** (or the phone's Home → New request) always starts
+**Starting over in the participant window:** **New request** (or the phone's Home → New request) always starts
 a fresh request, even while another ticket waits for a fix. To go back to a ticket a desk sent back, use
 **↪ Continue fixing MNJ-…** under the demo scripts, or the phone's Requests tab → the ticket → **Fix this request**.
 Right after sign-in Munjiz reopens a ticket that waits for a fix once, by itself.

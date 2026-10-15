@@ -7,25 +7,26 @@ from munjiz.agent import desk_title
 from munjiz.config import DESKS
 from munjiz.db import connect
 from munjiz.rules import sla
-from views.common import ago, kpi_cards, page_header
+from views.common import ago, alert, kpi_cards, page_header
 
-# Brand colours on the dark stage: desert gold, lavender, Expo emerald; "before" is a recessive neutral.
-DESK_COLOR = {"logistics": "#E2B04A", "security": "#A78BFA", "facilities": "#2FBF8A"}
-BEFORE, AFTER = "#5E7268", "#2FBF8A"
-AXIS, GRID, STAGE = "#B5C7BF", "rgba(255,255,255,0.08)", "#0A1A14"
-DESK_NAME = {d: desk_title(d, "en").split(" ", 1)[1] for d in DESKS}
+# shadcn zinc: today in neutral zinc, Munjiz in emerald; one colour per desk.
+DESK_COLOR = {"logistics": "#10B981", "security": "#F59E0B", "facilities": "#60A5FA"}
+BEFORE, AFTER = "#A1A1AA", "#10B981"
+AXIS, GRID, STAGE, FG = "#A1A1AA", "#27272A", "#09090B", "#FAFAFA"
+DESK_NAME = {d: desk_title(d, "en") for d in DESKS}
 
 
 def style(fig: go.Figure, height=320) -> go.Figure:
     fig.update_layout(height=height, margin=dict(l=10, r=10, t=36, b=10), bargap=0.35, bargroupgap=0.08,
                       legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, title=None),
-                      font=dict(family="IBM Plex Sans, -apple-system, Segoe UI, sans-serif", size=13, color=AXIS),
+                      font=dict(family="Geist, -apple-system, Segoe UI, sans-serif", size=12, color=AXIS),
                       plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                      hoverlabel=dict(font_size=13, bgcolor="#10261D", bordercolor="#2FBF8A", font_color="#EAF3EE"))
+                      hoverlabel=dict(font_size=12, bgcolor=STAGE, bordercolor=GRID, font_color=FG,
+                                      font_family="Geist, -apple-system, sans-serif"))
     fig.update_xaxes(gridcolor=GRID, zeroline=False, automargin=True, title_standoff=8, title_font_size=12,
-                     linecolor="rgba(255,255,255,0.12)", tickfont_color=AXIS)
-    fig.update_yaxes(gridcolor="rgba(0,0,0,0)", automargin=True, ticksuffix="  ", tickfont=dict(color="#DCE8E2", size=13))
-    fig.update_traces(marker_line_width=0, textfont=dict(color="#EAF3EE", size=12), constraintext="none", cliponaxis=False,
+                     linecolor=GRID, tickfont_color=AXIS, title_font_color=AXIS)
+    fig.update_yaxes(gridcolor="rgba(0,0,0,0)", automargin=True, ticksuffix="  ", tickfont=dict(color=FG, size=12))
+    fig.update_traces(marker_line_width=0, textfont=dict(color=FG, size=12), constraintext="none", cliponaxis=False,
                       selector=dict(type="bar"))
     return fig
 
@@ -47,10 +48,8 @@ if req.empty or "cross_desk_conflict" not in req or req.cross_desk_conflict.isna
     load.clear()
     req, steps = load()
 
-st.markdown(f'<div class="sim-banner"><b>Simulated data.</b> {len(req)} synthetic participant requests, each run '
-            'through a model of today\'s process and of Munjiz. The assumptions are listed at the bottom; '
-            'replace them with real figures from the organisers.</div>', unsafe_allow_html=True)
-st.write("")
+alert("Simulated data", f"{len(req)} synthetic participant requests, each run through a model of today's process "
+      "and of Munjiz. The assumptions are listed at the bottom; replace them with real figures from the organisers.")
 
 # Headline numbers: stat tiles, not charts.
 L, M = req.legacy_hours.mean(), req.munjiz_hours.mean()

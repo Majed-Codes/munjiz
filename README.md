@@ -172,7 +172,7 @@ The app says on every page that it is a hackathon prototype and not an official 
 - **Offline parser** (default, `MUNJIZ_BACKEND=local`): free and deterministic. It covers the demo
   scenarios, not every way of phrasing a request.
 - **Claude** (`MUNJIZ_BACKEND=claude`, or pick it in the sidebar): needs `ANTHROPIC_API_KEY`. Uses
-  `claude-opus-5-5` with server-side refusal fallback enabled. Each response is cached in `data/llm_cache/`
+  `claude-sonnet-5-5` (Sonnet 5.5) with server-side refusal fallback enabled. Each response is cached in `data/llm_cache/`
   by transcript, so a rehearsed demo replays with no API call. If the call fails on stage, the app falls back
   to the offline parser.
 
@@ -183,7 +183,7 @@ In **Presenter controls → Demo scripts** next to the phone:
 1. Scenario A (English or Arabic) → follow-up question for plate, workers' IDs and kW
 2. Follow-up answer → summary with gate, route, permit and power connection → Confirm
 3. Rule demo: a heavy truck at 3 pm is blocked (while the Expo is open, heavy vehicles only 22:00–06:00)
-4. 🔀 Clash demo: a truck at 2 am with power for the screens. Every desk passes on its own, but the utility crews
+4. Clash demo: a truck at 2 am with power for the screens. Every desk passes on its own, but the utility crews
    only connect power 06:00–23:00. Munjiz suggests connecting the power at 22:00 the evening before; one tap applies it
 5. Send-back demo: as Accreditation desk staff, "Send back to the participant" → "John Smith's ID could not be
    verified" → Request a change. The participant's ticket shows Partially approved; tap **Fix: new passport**, then

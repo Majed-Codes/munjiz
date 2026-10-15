@@ -2,7 +2,7 @@
 # SIMULATED rules, modelled on typical World Expo participant regulations. Replace with the official
 # Special Regulations when available. Checked by code (munjiz/rules.py), never by the LLM.
 desk: logistics
-icon: "🚚"
+icon: truck
 title: {en: Logistics & Site Access, ar: اللوجستيات ودخول الموقع}
 
 fields:

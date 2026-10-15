@@ -94,11 +94,10 @@ def split(raw: dict, pavilion: str, patch: dict | None = None) -> dict[str, dict
 
 
 def desk_title(desk: str, lang: str) -> str:
+    """Plain desk name. The desk's `icon` (a lucide icon name) is drawn only where HTML is rendered."""
     if desk == "cross_desk":
-        cross = conflicts.load_cross_desk()
-        return f"{cross['icon']} {cross['title'][lang]}"
-    rules = load_rules()[desk]
-    return f"{rules['icon']} {rules['title'][lang]}"
+        return conflicts.load_cross_desk()["title"][lang]
+    return load_rules()[desk]["title"][lang]
 
 
 def describe(check: DeskCheck, lang: str) -> str:

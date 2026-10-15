@@ -8,7 +8,7 @@ import streamlit as st
 from munjiz import rules
 from munjiz.agent import desk_title
 from munjiz.db import connect, row
-from views.common import page_header
+from views.common import alert, page_header
 
 user = st.session_state.user
 KEY_LABEL = {"hours": "Notice (hours)", "value": "Limit", "start": "From", "end": "Until", "enabled": "Active",
@@ -26,10 +26,8 @@ page_header("Expo Admin · organiser", "Desk rules",
             "Change notice periods, limits, time windows and response targets, or switch a rule off. Munjiz "
             "checks every request against these in code, so a change applies to the next message, with no code "
             "or file edit. Every change is logged.")
-st.markdown('<div class="sim-banner"><b>Simulated rules.</b> Modelled on how World Expos usually run participant '
-            'services. Replace them with Expo 2030 Riyadh\'s Special Regulations when available.</div>',
-            unsafe_allow_html=True)
-st.write("")
+alert("Simulated rules", "Modelled on how World Expos usually run participant services. Replace them with "
+      "Expo 2030 Riyadh's Special Regulations when available.")
 
 settings = rules.editable_settings()
 tabs = st.tabs([desk_title(d, "en") for d in [*rules.DESKS, rules.CROSS]])
@@ -43,7 +41,7 @@ for tab, (desk, items) in zip(tabs, groupby(settings, key=lambda s: s["desk"])):
             for col, s in zip(cols, group):
                 key = f"r_{desk}_{s['rule_id']}_{s['key']}"
                 label = KEY_LABEL.get(s["key"], s["key"])
-                edited = " ✎" if s["value"] != s["default"] else ""
+                edited = " (edited)" if s["value"] != s["default"] else ""
                 if s["kind"] == "bool":
                     new = col.toggle(label + edited, value=bool(s["value"]), key=key)
                 elif s["kind"] == "time":
@@ -63,7 +61,7 @@ for tab, (desk, items) in zip(tabs, groupby(settings, key=lambda s: s["desk"])):
                 for s, v in changes:
                     rules.set_rule(s["desk"], s["rule_id"], s["key"], v, user["id"])
                 st.toast(f"Saved {len(changes)} change{'s' if len(changes) != 1 else ''}" if changes else "No changes",
-                         icon="✅")
+                         icon=":material/check_circle:")
                 forget_widgets()
                 st.rerun()
 

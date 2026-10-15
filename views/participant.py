@@ -15,24 +15,24 @@ from munjiz.agent import run_fix, run_turn
 from munjiz.chat import is_yes, wants_fix
 from munjiz.i18n import detect_lang, fmt_dt, t
 from munjiz.tickets import RETURNED
-from views.common import STATUS, desk_cards, desk_title, duration, md_bold, rule_count
+from views.common import STATUS, badge, desk_cards, desk_icon, desk_title, duration, icon, md_bold, rule_count
 from views.phone_component import phone
 
 CONFLICT_DEMO = ("Our truck brings LED screens the day after tomorrow at 2 am, plate ABC 1234. Two workers come with "
                  "it: Ahmed Ali, ID 1023456789 and John Smith, passport P1234567. The screens need 30 kW of power.")
 DEMO = [
-    ("① Request", "I need to bring display equipment into our pavilion tomorrow at 10 pm. Two workers will come with the truck, and the screens need extra power."),
-    ("② Answer", "Plate is ABC 1234. Workers: Ahmed Ali, ID 1023456789 and John Smith, passport P1234567. The screens need 40 kW."),
-    ("① طلب", "أحتاج إدخال معدات عرض إلى جناحنا بكرة الساعة 10 مساءً. بيجي عاملين مع الشاحنة، والشاشات تحتاج كهرباء إضافية."),
-    ("② رد", "لوحة الشاحنة أ ب ج 1234. العمال: محمد العتيبي هوية 1023456789، وخالد الشمري هوية 2098765432. والشاشات تحتاج 40 كيلوواط."),
+    ("1. Request", "I need to bring display equipment into our pavilion tomorrow at 10 pm. Two workers will come with the truck, and the screens need extra power."),
+    ("2. Answer", "Plate is ABC 1234. Workers: Ahmed Ali, ID 1023456789 and John Smith, passport P1234567. The screens need 40 kW."),
+    ("1. طلب", "أحتاج إدخال معدات عرض إلى جناحنا بكرة الساعة 10 مساءً. بيجي عاملين مع الشاحنة، والشاشات تحتاج كهرباء إضافية."),
+    ("2. رد", "لوحة الشاحنة أ ب ج 1234. العمال: محمد العتيبي هوية 1023456789، وخالد الشمري هوية 2098765432. والشاشات تحتاج 40 كيلوواط."),
     ("Rule demo", "We're bringing furniture by truck tomorrow at 3 pm, plate ABC 1234."),
-    ("🔀 Clash demo", CONFLICT_DEMO),
+    ("Clash demo", CONFLICT_DEMO),
 ]
 FIX_DEMO = [("Fix: new passport", "John Smith's passport is P7654321"),
             ("Fix: Arabic ID", "رقم هوية خالد الشمري 2012345678")]
 INTRO = {"summary": "summary_intro", "followup": "followup_intro", "problems": "problems_intro",
          "conflict": "conflicts_intro", "fix_summary": "fix_summary_intro"}
-CARD_STATE = {"ok": {"en": "✓ Ready", "ar": "✓ جاهز"}, "missing": {"en": "Needs info", "ar": "ينقصه معلومات"},
+CARD_STATE = {"ok": {"en": "Ready", "ar": "جاهز"}, "missing": {"en": "Needs info", "ar": "ينقصه معلومات"},
               "blocked": {"en": "Rule", "ar": "مخالفة قاعدة"},
               "conflict": {"en": "Clash between desks", "ar": "تعارض بين الجهات"}}
 
@@ -161,7 +161,7 @@ def handle(message: str):
     try:
         result = run_turn(ss.conv, ss.pavilion, backend=ss.backend, patch=ss.patch)
     except Exception as exc:  # Claude unreachable on stage: fall back to the offline parser
-        st.toast(f"Claude unavailable ({type(exc).__name__}); using offline parser", icon="⚠️")
+        st.toast(f"Claude unavailable ({type(exc).__name__}); using offline parser", icon=":material/warning:")
         result = run_turn(ss.conv, ss.pavilion, backend="local", patch=ss.patch)
     ss.result = result
     remember(result)
@@ -189,7 +189,7 @@ def handle_fix(message: str):
     try:
         result = run_fix(ticket, ids, ss.fix_msgs, ss.conv, backend=ss.backend, patch=ss.fix_patch)
     except Exception as exc:
-        st.toast(f"Claude unavailable ({type(exc).__name__}); using offline parser", icon="⚠️")
+        st.toast(f"Claude unavailable ({type(exc).__name__}); using offline parser", icon=":material/warning:")
         result = run_fix(ticket, ids, ss.fix_msgs, ss.conv, backend="local", patch=ss.fix_patch)
     ss.result = result
     add_reply(result, prefix)
@@ -261,7 +261,7 @@ def phone_ticket(ticket: dict) -> dict:
                 who += f' · {s["reason"]}'
         subs.append({"id": s["id"], "icon": rules[s["desk"]]["icon"], "title": rules[s["desk"]]["title"][lang_],
                      "status": s["status"], "label": STATUS[s["status"]][lang_], "who": who})
-    foot = (f"⏱ {duration((created - started).total_seconds(), lang_)} " + ("حتى الإرسال" if ar else "to submit")
+    foot = (f"{duration((created - started).total_seconds(), lang_)} " + ("حتى الإرسال" if ar else "to submit")
             + " · " + (("أُنجز خلال " if ar else "done in ") if ticket["closed_at"] else ("مفتوحة منذ " if ar else "open for "))
             + duration((end - created).total_seconds(), lang_)
             + f" · {approved}/{len(subs)} " + ("موافقات" if ar else "approved"))
@@ -269,7 +269,7 @@ def phone_ticket(ticket: dict) -> dict:
     if ticket["status"] == "completed":
         done = "تمت موافقة جميع الجهات. طلبك منجز." if ar else "All desks approved. Your request is done."
     return {"id": ticket["id"], "status": ticket["status"], "label": STATUS[ticket["status"]][lang_],
-            "dir": "rtl" if ar else "ltr", "one": "تذكرة واحدة" if ar else "ONE TICKET", "subs": subs,
+            "dir": "rtl" if ar else "ltr", "one": "تذكرة واحدة" if ar else "One ticket", "subs": subs,
             "foot": foot, "done": done,
             "fix": t("fix_this_request", lang_) if ticket["status"] in ("partially_approved", "action_needed") else ""}
 
@@ -283,11 +283,11 @@ def phone_data() -> dict:
     r = ss.result
     ready = bool(r and r.ready and (not ss.ticket_id or r.fixing))
     if r and r.fixing:
-        names = " + ".join(desk_title(d, lang()).split(" ", 1)[1] for d in r.checks)
+        names = " + ".join(desk_title(d, lang()) for d in r.checks)
         confirm = f"إرسال التصحيح إلى {names}" if lang() == "ar" else f"Send the fix to {names}"
     else:
         n_desks = len(r.checks) if r else 0
-        confirm = f"تأكيد وإرسال إلى {n_desks} جهات" if lang() == "ar" else f"Confirm & send to {n_desks} desks"
+        confirm = f"تأكيد وإرسال إلى {n_desks} جهات" if lang() == "ar" else f"Confirm and send to {n_desks} desks"
     name = ss.pavilion.replace(" (example)", "")
     return {
         "clock": f"{now:%H:%M}", "expo_day": expo.expo_day(now) or "—", "days": expo.DAYS,
@@ -331,13 +331,11 @@ with phone_col:
 
 # --- Presenter side: the story and the live agent trace ------------------------------------------
 with panel:
-    st.markdown('<div class="eyebrow-x">Live demo · Participant app</div>'
-                '<div class="hero-line">One request.<br>One ticket. <span class="g">Done.</span></div>'
-                '<div class="hero-ar">طلب واحد. تذكرة واحدة. منجز.</div>'
-                '<div class="hero-sub">Munjiz lives inside the Expo 2030 Riyadh app. A pavilion team asks once; '
-                'the agent splits the request across the service desks, checks each desk\'s rules and the clashes '
-                'between them, and sends one ticket. Expo Admin staff decide. Watch it work:</div>',
-                unsafe_allow_html=True)
+    st.markdown('<div class="lead">' + badge('<span class="dot"></span>Live demo · Participant app', "outline")
+                + '<h2>One request. One ticket. Done.</h2><div class="ar">طلب واحد. تذكرة واحدة. منجز.</div>'
+                '<p>Munjiz lives inside the Expo 2030 Riyadh app. A pavilion team asks once; the agent splits the '
+                'request across the service desks, checks each desk\'s rules and the clashes between them, and sends '
+                'one ticket. Expo Admin staff decide.</p></div>', unsafe_allow_html=True)
 
     @st.fragment(run_every="2s")
     def trace():
@@ -362,11 +360,12 @@ with panel:
         ready = bool(ticket) or bool(r and r.ready)
 
         def step(state, title, detail="", chips=()):
-            chip_html = "".join(f"<span>{html.escape(c)}</span>" for c in chips)
-            mark = "✓" if state == "done" else "•"
-            return (f'<div class="step {state}"><div class="dot">{mark}</div><div><div class="t">{title}</div>'
-                    f'<div class="d">{detail}</div>' + (f'<div class="chips">{chip_html}</div>' if chips else "")
-                    + "</div></div>")
+            chip_html = "".join(badge((desk_icon(c[0], "i sm") if c[0] else "") + html.escape(c[1]), "outline") for c in chips)
+            mark = (icon("circle-check") if state == "done" else '<span class="dot"></span>' if state == "active"
+                    else icon("circle", width=1.5))
+            return (f'<div class="step {state}"><div class="ic">{mark}</div><div><div class="t">{title}</div>'
+                    + (f'<div class="d">{detail}</div>' if detail else "")
+                    + (f'<div class="chips">{chip_html}</div>' if chips else "") + "</div></div>")
 
         lang_name = {"en": "English", "ar": "Arabic"}.get(lang(), "")
         steps = [
@@ -375,7 +374,7 @@ with panel:
                  else "Waiting for the participant's message"),
             step("done" if desks else "pending", "Splits it into one sub-request per desk",
                  f"{len(desks)} desks; shared details (time, pavilion) entered once" if desks else "",
-                 [desk_title(d, "en") for d in desks]),
+                 [(d, desk_title(d, "en")) for d in desks]),
             step("done" if desk_ok else "active" if r else "pending", "Checks each desk's rules in code",
                  ("all passed" if desk_ok and ticket else
                   (f"{n_rules} rules checked · all passed" if desk_ok else
@@ -394,7 +393,7 @@ with panel:
                  (f"{tid} · {len(ticket['subs'])} desks notified at once"
                   + (f" · n8n routed {routed} to desk systems" if (routed := sum(1 for s in ticket['subs'] if s.get('desk_ref'))) else ""))
                  if ticket else "",
-                 [s["desk_ref"] for s in ticket["subs"] if s.get("desk_ref")] if ticket else ()),
+                 [(None, s["desk_ref"]) for s in ticket["subs"] if s.get("desk_ref")] if ticket else ()),
         ]
         if returned or fixed:
             steps.append(step("active" if returned else "done", "A desk sent a part back; only that part is fixed",
@@ -404,12 +403,14 @@ with panel:
         steps.append(step("done" if ticket and ticket["status"] == "completed" else "active" if ticket else "pending",
                           "Expo Admin staff decide (a human always decides)",
                           f"{approved} of {len(ticket['subs'])} approved" if ticket else ""))
-        st.markdown('<div class="trace"><h4><span class="live-dot"></span>Agent trace · live</h4>' + "".join(steps) + "</div>",
-                    unsafe_allow_html=True)
+        st.markdown('<div class="card"><div class="hd"><div><div class="ct">Agent trace</div>'
+                    '<div class="cd">What the agent does with each message, as it happens.</div></div>'
+                    + badge('<span class="dot"></span>Live', "outline") + '</div>'
+                    '<div class="bd steps">' + "".join(steps) + "</div></div>", unsafe_allow_html=True)
 
     trace()
 
-    st.markdown('<div class="demo-label"><b>Demo scripts</b> · sends the message into the app</div>',
+    st.markdown('<div class="demo-label">Demo scripts <span>· sends the message into the app</span></div>',
                 unsafe_allow_html=True)
     fixing_now = bool(returned_parts())
     others_waiting = [w["id"] for w in chat.waiting_for_fix(ss.pavilion) if w["id"] != ss.ticket_id]
@@ -419,9 +420,9 @@ with panel:
         if fixing_now:
             for label, msg in FIX_DEMO:
                 st.button(label, key=f"demo_{label}", on_click=send_demo, args=(msg,))
-        st.button("↺ New request", on_click=reset)
+        st.button("New request", type="primary", on_click=reset)
         for tid in others_waiting[:3]:  # a desk sent a part back on an earlier request
-            st.button(f"↪ Continue fixing {tid}", key=f"resume_{tid}", on_click=resume, args=(tid,))
+            st.button(f"Continue fixing {tid}", key=f"resume_{tid}", on_click=resume, args=(tid,))
     if fixing_now:
         st.caption("A desk sent a part back. Fix scripts: John Smith's passport (English demo) or "
                    "Khalid Al-Shammari's ID (Arabic demo).")
