@@ -1,7 +1,8 @@
 """Munjiz REST API: what n8n and desk systems call.
 
 Run: uvicorn munjiz.api:app --host 0.0.0.0 --port 8000
-Write endpoints need the header `X-Munjiz-Token: <MUNJIZ_API_TOKEN>` when a token is configured.
+Write endpoints and ticket reads (they hold worker names and ID numbers) need the header
+`X-Munjiz-Token: <MUNJIZ_API_TOKEN>` when a token is configured. /health is open.
 
 /mock/desks/* stands in for each desk's own system (gate booking, accreditation, utilities). In a pilot,
 n8n would call the real systems instead and nothing in Munjiz would change.
@@ -40,10 +41,14 @@ async def health(request: Request):
 
 
 async def list_tickets(request: Request):
+    if not authorised(request):
+        return error(401, "Missing or wrong X-Munjiz-Token header")
     return JSONResponse(tickets.list_tickets())
 
 
 async def get_ticket(request: Request):
+    if not authorised(request):
+        return error(401, "Missing or wrong X-Munjiz-Token header")
     ticket = tickets.get_ticket(request.path_params["ticket_id"])
     return JSONResponse(ticket) if ticket else error(404, f"No ticket {request.path_params['ticket_id']}")
 
@@ -59,19 +64,36 @@ async def pending(request: Request):
 
 
 async def decide(request: Request):
-    """A desk approves or rejects its part, from the staff console, n8n, or the desk's own system."""
+    """A desk decides on its part, from the staff console, n8n, or the desk's own system.
+    Send {"decision": "approve" | "request_change" | "reject", "staff": ..., "reason": ...}
+    (the older {"approve": true/false} form still works)."""
     if not authorised(request):
         return error(401, "Missing or wrong X-Munjiz-Token header")
     data = await body_json(request)
-    if data is None or not isinstance(data.get("approve"), bool) or not data.get("staff"):
-        return error(422, 'Send JSON like {"approve": true, "staff": "logistics.officer", "reason": ""}')
+    usage = ('Send JSON like {"decision": "approve", "staff": "logistics.officer"} or '
+             '{"decision": "request_change", "staff": "security.officer", "reason": "ID could not be verified"}')
+    if data is None or not data.get("staff"):
+        return error(422, usage)
+    outcome = data.get("decision")
+    if outcome is None and isinstance(data.get("approve"), bool):
+        outcome = "approve" if data["approve"] else "reject"
+    if outcome not in tickets.OUTCOMES:
+        return error(422, usage)
     try:
-        ticket = tickets.decide(request.path_params["sub_id"], data["approve"], str(data["staff"]),
-                                str(data.get("reason") or ""))
+        ticket = tickets.decide(request.path_params["sub_id"], staff=str(data["staff"]),
+                                reason=str(data.get("reason") or ""), outcome=outcome)
     except ValueError as exc:
         return error(409, str(exc))
     return JSONResponse({"ticket_id": ticket["id"], "ticket_status": ticket["status"],
                          "subs": {s["id"]: s["status"] for s in ticket["subs"]}})
+
+
+async def sla_sweep(request: Request):
+    """Called by the n8n SLA watchdog: sends each overdue part one reminder, then one escalation."""
+    if not authorised(request):
+        return error(401, "Missing or wrong X-Munjiz-Token header")
+    result = tickets.sla_sweep()
+    return JSONResponse({**result, "count": len(result["reminders"]) + len(result["escalations"])})
 
 
 async def desk_inbox(request: Request):
@@ -103,5 +125,6 @@ app = Starlette(routes=[
     Route("/api/tickets/{ticket_id}", get_ticket),
     Route("/api/subrequests/pending", pending),
     Route("/api/subrequests/{sub_id}/decision", decide, methods=["POST"]),
+    Route("/api/sla/sweep", sla_sweep, methods=["POST"]),
     Route("/mock/desks/{desk}/inbox", desk_inbox, methods=["GET", "POST"]),
 ])

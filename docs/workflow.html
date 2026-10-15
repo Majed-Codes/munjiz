@@ -54,6 +54,11 @@ figcaption { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 1
 .lane-sep { stroke: var(--line); stroke-width: 1; }
 .lane-name { font: 600 13px var(--font-body); fill: var(--ink); }
 .lane-sub { font: 400 11px var(--font-body); fill: var(--muted); }
+.zone { fill: var(--accent-soft); } .zone.admin { fill: var(--accent); } .zone.bridge { fill: var(--line); }
+.zone-name { font: 600 10px var(--font-mono); letter-spacing: 0.12em; fill: var(--accent); }
+.zone-name.admin { fill: var(--accent-ink); } .zone-name.bridge { fill: var(--ink); }
+.edge.ret { stroke-dasharray: 2 0; }
+.node.warn rect { stroke-dasharray: 4 3; }
 .node rect, .node polygon { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.4; transition: fill .35s, stroke .35s, stroke-width .35s; }
 .node .t { font: 600 12.5px var(--font-body); fill: var(--ink); }
 .node .s { font: 400 10.5px var(--font-body); fill: var(--muted); }
@@ -122,74 +127,90 @@ blockquote .ar { font-family: var(--font-ar); direction: rtl; display: block; ma
   <header>
     <div class="eyebrow">UML activity diagram · Expo 2030 Riyadh · Challenge 5.5</div>
     <h1>Munjiz request workflow <span class="ar">· منجز</span></h1>
-    <p class="lede">How one participant request moves from the Expo app through the agent and each desk's rules, becomes one ticket, and is approved by three desks in parallel. Press play to follow Scenario A: a display-equipment delivery that needs a gate slot, two worker passes and extra power.</p>
+    <p class="lede">How one participant request moves from the Expo app through the agent, each desk's rules and the clashes between desks, becomes one ticket, and is decided by three Expo Admin desks in parallel. A desk can send one part back; only that part is fixed. Press play to follow Scenario A: a display-equipment delivery that needs a gate slot, two worker passes and extra power.</p>
   </header>
 
   <figure>
     <div class="scroller">
-      <svg class="uml" id="uml" viewBox="0 0 1620 712" role="img" aria-label="UML activity diagram with five swimlanes. The participant describes a need once; the Munjiz agent extracts fields, splits them by desk and checks each desk's rules in code; if information is missing it asks once and loops back; once complete the participant confirms, one ticket is created, a fork sends the parts to Logistics, Accreditation and Facilities in parallel, staff approve, a join closes the ticket, the participant is notified, and every event feeds the organiser dashboard.">
+      <svg class="uml" id="uml" viewBox="0 0 1770 762" role="img" aria-label="UML activity diagram with five swimlanes in three zones: participant, Munjiz, Expo Admin. The participant describes a need once; the Munjiz agent extracts fields, splits them by desk and checks each desk's rules in code; if information is missing it asks once and loops back; once complete the participant confirms, one ticket is created, a fork sends the parts to Logistics, Accreditation and Facilities in parallel, staff approve, a join closes the ticket, the participant is notified, and every event feeds the organiser dashboard. Munjiz also checks clashes between desks before submission, lets a desk send one part back to be fixed alone, and watches each part against its desk's response target.">
         <defs>
           <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahead" d="M0 0 L10 5 L0 10 z"/></marker>
           <marker id="ah-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahead-on" d="M0 0 L10 5 L0 10 z"/></marker>
         </defs>
 
         <!-- Swimlanes -->
-        <rect class="lane-a" x="0" y="20" width="1620" height="130"/>
-        <rect class="lane-b" x="0" y="150" width="1620" height="130"/>
-        <rect class="lane-a" x="0" y="280" width="1620" height="130"/>
-        <rect class="lane-b" x="0" y="410" width="1620" height="190"/>
-        <rect class="lane-a" x="0" y="600" width="1620" height="100"/>
-        <line class="lane-sep" x1="0" y1="150" x2="1620" y2="150"/>
-        <line class="lane-sep" x1="0" y1="280" x2="1620" y2="280"/>
-        <line class="lane-sep" x1="0" y1="410" x2="1620" y2="410"/>
-        <line class="lane-sep" x1="0" y1="600" x2="1620" y2="600"/>
-        <line class="lane-sep" x1="138" y1="20" x2="138" y2="700"/>
-        <text class="lane-name" x="16" y="82">Participant</text><text class="lane-sub" x="16" y="98">pavilion team · Expo app</text>
-        <text class="lane-name" x="16" y="212">Munjiz agent</text><text class="lane-sub" x="16" y="228">Claude + rules engine</text>
-        <text class="lane-name" x="16" y="342">Ticket + n8n</text><text class="lane-sub" x="16" y="358">one ticket · n8n routes</text>
-        <text class="lane-name" x="16" y="502">Service desks</text><text class="lane-sub" x="16" y="518">own systems · console</text>
-        <text class="lane-name" x="16" y="647">Organisers</text><text class="lane-sub" x="16" y="663">dashboard</text>
+        <rect class="lane-a" x="0" y="20" width="1770" height="130"/>
+        <rect class="lane-b" x="0" y="150" width="1770" height="130"/>
+        <rect class="lane-a" x="0" y="280" width="1770" height="130"/>
+        <rect class="lane-b" x="0" y="410" width="1770" height="190"/>
+        <rect class="lane-a" x="0" y="600" width="1770" height="150"/>
+        <line class="lane-sep" x1="0" y1="150" x2="1770" y2="150"/>
+        <line class="lane-sep" x1="0" y1="280" x2="1770" y2="280"/>
+        <line class="lane-sep" x1="0" y1="410" x2="1770" y2="410"/>
+        <line class="lane-sep" x1="0" y1="600" x2="1770" y2="600"/>
+        <line class="lane-sep" x1="150" y1="20" x2="150" y2="750"/>
+        <!-- Zones: the participant side, the Munjiz bridge, the Expo Admin side -->
+        <rect class="zone" x="0" y="20" width="22" height="130"/>
+        <rect class="zone bridge" x="0" y="150" width="22" height="260"/>
+        <rect class="zone admin" x="0" y="410" width="22" height="340"/>
+        <text class="zone-name" transform="translate(15 85) rotate(-90)" text-anchor="middle">PARTICIPANT</text>
+        <text class="zone-name bridge" transform="translate(15 280) rotate(-90)" text-anchor="middle">MUNJIZ · THE BRIDGE</text>
+        <text class="zone-name admin" transform="translate(15 580) rotate(-90)" text-anchor="middle">EXPO ADMIN</text>
+        <text class="lane-name" x="32" y="82">Participant</text><text class="lane-sub" x="32" y="98">pavilion team · app</text>
+        <text class="lane-name" x="32" y="212">Munjiz agent</text><text class="lane-sub" x="32" y="228">rules in code</text>
+        <text class="lane-name" x="32" y="342">Ticket + n8n</text><text class="lane-sub" x="32" y="358">one ticket</text>
+        <text class="lane-name" x="32" y="502">Service desks</text><text class="lane-sub" x="32" y="518">desk staff</text>
+        <text class="lane-name" x="32" y="667">Oversight</text><text class="lane-sub" x="32" y="683">supervisor · organiser</text>
 
         <!-- Control flows -->
         <path class="edge" id="e0" d="M179 85 H205"/>
         <path class="edge" id="e1" d="M280 110 V215 H375"/>
         <path class="edge" id="e2" d="M505 215 H525"/>
         <path class="edge" id="e3" d="M655 215 H675"/>
-        <path class="edge" id="e4" d="M805 215 H842"/>
-        <path class="edge" id="e5" d="M870 187 V110"/>
-        <path class="edge" id="e6" d="M800 85 H470 V190"/>
-        <path class="edge" id="e7" d="M898 215 H965"/>
-        <path class="edge" id="e8" d="M1030 190 V85 H1080"/>
-        <path class="edge" id="e9" d="M1150 110 V320"/>
-        <path class="edge" id="e10" d="M1150 370 V507 H1258"/>
-        <path class="edge" id="e11a" d="M1264 449 H1290"/>
-        <path class="edge" id="e11b" d="M1264 507 H1290"/>
-        <path class="edge" id="e11c" d="M1264 565 H1290"/>
-        <path class="edge" id="e12a" d="M1450 449 H1474"/>
-        <path class="edge" id="e12b" d="M1450 507 H1474"/>
-        <path class="edge" id="e12c" d="M1450 565 H1474"/>
-        <path class="edge" id="e13" d="M1477 436 V370"/>
-        <path class="edge" id="e14" d="M1477 320 V110"/>
-        <path class="edge" id="e15" d="M1547 85 H1573"/>
+        <path class="edge" id="e3b" d="M805 215 H842"/>
+        <path class="edge" id="e4" d="M972 215 H992"/>
+        <path class="edge" id="e5" d="M1020 187 V110"/>
+        <path class="edge" id="e6" d="M950 85 H470 V190"/>
+        <path class="edge" id="e7" d="M1048 215 H1115"/>
+        <path class="edge" id="e8" d="M1180 190 V85 H1230"/>
+        <path class="edge" id="e9" d="M1300 110 V320"/>
+        <path class="edge" id="e10" d="M1300 370 V507 H1408"/>
+        <path class="edge" id="e11a" d="M1414 449 H1440"/>
+        <path class="edge" id="e11b" d="M1414 507 H1440"/>
+        <path class="edge" id="e11c" d="M1414 565 H1440"/>
+        <path class="edge" id="e12a" d="M1600 449 H1624"/>
+        <path class="edge" id="e12b" d="M1600 507 H1624"/>
+        <path class="edge" id="e12c" d="M1600 565 H1624"/>
+        <path class="edge" id="e13" d="M1627 436 V370"/>
+        <path class="edge" id="e14" d="M1627 320 V110"/>
+        <path class="edge" id="e15" d="M1697 85 H1723"/>
         <!-- Object flows (events) -->
-        <path class="edge obj" id="o1" d="M1100 370 V651 H1150"/>
-        <path class="edge obj" id="o2" d="M1547 345 H1600 V651 H1330"/>
+        <path class="edge ret" id="r1" d="M1500 426 V110"/>
+        <path class="edge ret" id="r2" d="M1420 110 V345 H1370"/>
+        <path class="edge obj" id="s1" d="M1560 588 V690"/>
+        <path class="edge obj" id="o1" d="M1250 370 V651 H1300"/>
+        <path class="edge obj" id="o2" d="M1697 345 H1750 V651 H1480"/>
 
         <!-- Guards and flow labels -->
-        <text class="guard" x="880" y="146">[missing info]</text>
-        <text class="guard" x="880" y="160">ask once</text>
+        <text class="guard" x="1030" y="146">[missing info]</text>
+        <text class="guard" x="1030" y="160">ask once</text>
         <text class="guard" x="635" y="77" text-anchor="middle">answer → re-extract whole chat</text>
-        <text class="guard" x="931" y="205" text-anchor="middle">[complete]</text>
-        <text class="guard" x="1261" y="595" text-anchor="middle">fork</text>
-        <text class="guard" x="1477" y="595" text-anchor="middle">join</text>
-        <text class="guard warn" x="1492" y="500">[any rejected]</text>
-        <text class="guard warn" x="1492" y="514">→ Action needed</text>
-        <text class="guard" x="1108" y="624">ticket_submitted → n8n</text>
-        <text class="guard" x="1592" y="624" text-anchor="end">n8n ← ticket_completed</text>
+        <text class="guard" x="1081" y="205" text-anchor="middle">[complete]</text>
+        <text class="guard" x="1411" y="595" text-anchor="middle">fork</text>
+        <text class="guard" x="1627" y="595" text-anchor="middle">join</text>
+        <text class="guard warn" x="1695" y="482" text-anchor="middle">[sent back]</text>
+        <text class="guard warn" x="1695" y="496" text-anchor="middle">→ Partially</text>
+        <text class="guard warn" x="1695" y="510" text-anchor="middle">approved</text>
+        <text class="guard warn" x="1508" y="246">[change requested]</text>
+        <text class="guard warn" x="1508" y="260">only that part</text>
+        <text class="guard" x="1428" y="300">v2 · re-checked</text>
+        <text class="guard" x="1568" y="678">SLA clock per part</text>
+        <text class="guard" x="1258" y="624">ticket_submitted → n8n</text>
+        <text class="guard" x="1742" y="624" text-anchor="end">n8n ← ticket_completed</text>
 
         <!-- Initial and final nodes -->
         <circle class="pseudo" id="start" cx="170" cy="85" r="9"/>
-        <g id="end"><circle class="ring" cx="1585" cy="85" r="11"/><circle class="pseudo" cx="1585" cy="85" r="6.5"/></g>
+        <g id="end"><circle class="ring" cx="1735" cy="85" r="11"/><circle class="pseudo" cx="1735" cy="85" r="6.5"/></g>
 
         <!-- Actions -->
         <g class="node" id="n1"><rect x="205" y="60" width="150" height="50" rx="18"/>
@@ -200,39 +221,45 @@ blockquote .ar { font-family: var(--font-ar); direction: rtl; display: block; ma
           <text class="t" x="590" y="212" text-anchor="middle">Split by desk</text><text class="s" x="590" y="228" text-anchor="middle">time, pavilion shared</text></g>
         <g class="node" id="n4"><rect x="675" y="190" width="130" height="50" rx="18"/>
           <text class="t" x="740" y="212" text-anchor="middle">Check desk rules</text><text class="s" x="740" y="228" text-anchor="middle">17 rules, in code</text></g>
-        <g class="node" id="d1"><polygon points="870,187 898,215 870,243 842,215"/></g>
-        <g class="node" id="n6"><rect x="800" y="60" width="140" height="50" rx="18"/>
-          <text class="t" x="870" y="82" text-anchor="middle">Answer follow-up</text><text class="s" x="870" y="98" text-anchor="middle">plate · IDs · kW</text></g>
-        <g class="node" id="n7"><rect x="965" y="190" width="130" height="50" rx="18"/>
-          <text class="t" x="1030" y="212" text-anchor="middle">Show summary</text><text class="s" x="1030" y="228" text-anchor="middle">gate · passes · power</text></g>
-        <g class="node" id="n8"><rect x="1080" y="60" width="140" height="50" rx="18"/>
-          <text class="t" x="1150" y="82" text-anchor="middle">Confirm</text><text class="s" x="1150" y="98" text-anchor="middle">nothing sent before</text></g>
-        <g class="node" id="n9"><rect x="1080" y="320" width="140" height="50" rx="18"/>
-          <text class="t" x="1150" y="342" text-anchor="middle">Create one ticket</text><text class="s" x="1150" y="358" text-anchor="middle">n8n routes 3 parts</text></g>
-        <rect class="bar" id="fork" x="1258" y="436" width="6" height="142" rx="2"/>
-        <g class="node" id="dl"><rect x="1290" y="426" width="160" height="46" rx="16"/>
-          <text class="t" x="1370" y="445" text-anchor="middle">Logistics &amp; Site Access</text><text class="s" x="1370" y="461" text-anchor="middle">officer approves · gate L2</text></g>
-        <g class="node" id="ds"><rect x="1290" y="484" width="160" height="46" rx="16"/>
-          <text class="t" x="1370" y="503" text-anchor="middle">Accreditation &amp; Security</text><text class="s" x="1370" y="519" text-anchor="middle">officer approves · 2 passes</text></g>
-        <g class="node" id="df"><rect x="1290" y="542" width="160" height="46" rx="16"/>
-          <text class="t" x="1370" y="561" text-anchor="middle">Facilities &amp; Utilities</text><text class="s" x="1370" y="577" text-anchor="middle">officer approves · 63 A</text></g>
-        <rect class="bar" id="join" x="1474" y="436" width="6" height="142" rx="2"/>
-        <g class="node" id="n10"><rect x="1407" y="320" width="140" height="50" rx="18"/>
-          <text class="t" x="1477" y="342" text-anchor="middle">Close ticket</text><text class="s" x="1477" y="358" text-anchor="middle">status: Done</text></g>
-        <g class="node" id="n11"><rect x="1407" y="60" width="140" height="50" rx="18"/>
-          <text class="t" x="1477" y="82" text-anchor="middle">Notified once</text><text class="s" x="1477" y="98" text-anchor="middle">all desks approved</text></g>
-        <g class="node" id="n12"><rect x="1150" y="628" width="180" height="46" rx="16"/>
-          <text class="t" x="1240" y="647" text-anchor="middle">Event log → KPIs</text><text class="s" x="1240" y="663" text-anchor="middle">time · bottlenecks · first-time</text></g>
+        <g class="node" id="nC"><rect x="842" y="190" width="130" height="50" rx="18"/>
+          <text class="t" x="907" y="212" text-anchor="middle">Check clashes</text><text class="s" x="907" y="228" text-anchor="middle">4 checks, in code</text></g>
+        <g class="node" id="d1"><polygon points="1020,187 1048,215 1020,243 992,215"/></g>
+        <g class="node" id="n6"><rect x="950" y="60" width="140" height="50" rx="18"/>
+          <text class="t" x="1020" y="82" text-anchor="middle">Answer follow-up</text><text class="s" x="1020" y="98" text-anchor="middle">plate · IDs · kW</text></g>
+        <g class="node" id="n7"><rect x="1115" y="190" width="130" height="50" rx="18"/>
+          <text class="t" x="1180" y="212" text-anchor="middle">Show summary</text><text class="s" x="1180" y="228" text-anchor="middle">gate · passes · power</text></g>
+        <g class="node" id="n8"><rect x="1230" y="60" width="140" height="50" rx="18"/>
+          <text class="t" x="1300" y="82" text-anchor="middle">Confirm</text><text class="s" x="1300" y="98" text-anchor="middle">nothing sent before</text></g>
+        <g class="node" id="n9"><rect x="1230" y="320" width="140" height="50" rx="18"/>
+          <text class="t" x="1300" y="342" text-anchor="middle">Create one ticket</text><text class="s" x="1300" y="358" text-anchor="middle">n8n routes 3 parts</text></g>
+        <rect class="bar" id="fork" x="1408" y="436" width="6" height="142" rx="2"/>
+        <g class="node" id="dl"><rect x="1440" y="426" width="160" height="46" rx="16"/>
+          <text class="t" x="1520" y="445" text-anchor="middle">Logistics &amp; Site Access</text><text class="s" x="1520" y="461" text-anchor="middle">officer approves · gate L2</text></g>
+        <g class="node" id="ds"><rect x="1440" y="484" width="160" height="46" rx="16"/>
+          <text class="t" x="1520" y="503" text-anchor="middle">Accreditation &amp; Security</text><text class="s" x="1520" y="519" text-anchor="middle">officer approves · 2 passes</text></g>
+        <g class="node" id="df"><rect x="1440" y="542" width="160" height="46" rx="16"/>
+          <text class="t" x="1520" y="561" text-anchor="middle">Facilities &amp; Utilities</text><text class="s" x="1520" y="577" text-anchor="middle">officer approves · 63 A</text></g>
+        <rect class="bar" id="join" x="1624" y="436" width="6" height="142" rx="2"/>
+        <g class="node" id="n10"><rect x="1557" y="320" width="140" height="50" rx="18"/>
+          <text class="t" x="1627" y="342" text-anchor="middle">Close ticket</text><text class="s" x="1627" y="358" text-anchor="middle">status: Done</text></g>
+        <g class="node" id="n11"><rect x="1557" y="60" width="140" height="50" rx="18"/>
+          <text class="t" x="1627" y="82" text-anchor="middle">Notified once</text><text class="s" x="1627" y="98" text-anchor="middle">all desks approved</text></g>
+        <g class="node warn" id="nF"><rect x="1390" y="60" width="140" height="50" rx="18"/>
+          <text class="t" x="1460" y="82" text-anchor="middle">Fix that part only</text><text class="s" x="1460" y="98" text-anchor="middle">approved parts stay</text></g>
+        <g class="node" id="nS"><rect x="1490" y="690" width="170" height="46" rx="16"/>
+          <text class="t" x="1575" y="709" text-anchor="middle">SLA watch</text><text class="s" x="1575" y="725" text-anchor="middle">reminder · escalate · reassign</text></g>
+        <g class="node" id="n12"><rect x="1300" y="628" width="180" height="46" rx="16"/>
+          <text class="t" x="1390" y="647" text-anchor="middle">Event log → KPIs</text><text class="s" x="1390" y="663" text-anchor="middle">time · bottlenecks · first-time</text></g>
 
         <g id="tokens"></g>
       </svg>
     </div>
-    <figcaption>One request, one loop at most, one ticket. The agent prepares and checks; the fork sends each desk its part at the same moment; people approve; the join closes the ticket. Dashed arrows are object flows of events, sent through n8n to desk systems, notifications and the organiser dashboard.</figcaption>
+    <figcaption>Two sides, one ticket between them. One request, one loop at most, one ticket. The agent prepares and checks; the fork sends each desk its part at the same moment; people approve; the join closes the ticket. Dashed arrows are object flows of events, sent through n8n to desk systems, notifications and the organiser dashboard.</figcaption>
   </figure>
 
   <section class="player" aria-label="Walkthrough controls">
     <div class="now" aria-live="polite">
-      <div class="count" id="count">Ready · 14 steps</div>
+      <div class="count" id="count">Ready · 18 steps</div>
       <h2 id="stepTitle">Press play to follow Scenario A</h2>
       <p id="stepText">A token travels the diagram the way the request does, from the participant's message to the last desk approval.</p>
     </div>
@@ -280,41 +307,53 @@ blockquote .ar { font-family: var(--font-ar); direction: rtl; display: block; ma
     { title: "Check the rules", short: "17 desk rules run in code",
       text: "Each desk's rule file is checked in Python: notice periods, the heavy-truck night window, ID formats and power limits. The model cannot skip a rule.",
       edges: ["e3"], on: ["n4"], paths: [[[655, 215], [675, 215]]] },
+    { title: "Check clashes between desks", short: "4 cross-desk checks run in code",
+      text: "Each part can pass its own desk and still clash with another: a truck allowed only at night while utility crews stop at 23:00, or worker passes that start after the truck. Munjiz compares the parts with each other and suggests a fix the participant accepts in one tap.",
+      edges: ["e3b"], on: ["nC"], paths: [[[805, 215], [842, 215]]] },
     { title: "Ask once for what is missing", short: "[missing info] one follow-up",
       text: "The plate number, the two workers' IDs and the power in kW are missing. Munjiz asks one question that covers all three desks.",
-      edges: ["e4", "e5"], on: ["d1", "n6"], paths: [[[805, 215], [870, 215], [870, 110]]] },
+      edges: ["e4", "e5"], on: ["d1", "n6"], paths: [[[972, 215], [1020, 215], [1020, 110]]] },
     { title: "Answer and re-check", short: "Answer loops back to extraction",
       text: "The participant answers in one message. The agent re-reads the whole conversation, so a later correction always wins.",
-      edges: ["e6"], on: ["n2"], paths: [[[800, 85], [470, 85], [470, 190]]] },
+      edges: ["e6"], on: ["n2"], paths: [[[950, 85], [470, 85], [470, 190]]] },
     { title: "All rules pass", short: "[complete] summary shown",
-      text: "Split and checked again: all 17 rules pass. The summary books Logistics Gate L2 with a night slot, two contractor passes and a 63 A outlet.",
-      edges: ["e2", "e3", "e4", "e7"], on: ["d1", "n7"], paths: [[[505, 215], [870, 215], [965, 215]]] },
+      text: "Split and checked again: all 17 desk rules and the 4 cross-desk checks pass. The summary books Logistics Gate L2 with a night slot, two contractor passes and a 63 A outlet.",
+      edges: ["e2", "e3", "e4", "e7"], on: ["d1", "n7"], paths: [[[505, 215], [1020, 215], [1115, 215]]] },
     { title: "Participant confirms", short: "Human confirmation",
       text: "Nothing reaches a desk before the participant taps Confirm.",
-      edges: ["e8"], on: ["n8"], paths: [[[1030, 190], [1030, 85], [1080, 85]]] },
+      edges: ["e8"], on: ["n8"], paths: [[[1180, 190], [1180, 85], [1230, 85]]] },
     { title: "One ticket", short: "Ticket MNJ-1001 created",
       text: "One ticket is created with three linked parts: LOG-1001, SEC-1001 and FAC-1001. Munjiz sends one event to n8n.",
-      edges: ["e9"], on: ["n9"], paths: [[[1150, 110], [1150, 320]]] },
+      edges: ["e9"], on: ["n9"], paths: [[[1300, 110], [1300, 320]]] },
     { title: "Fork: desks work in parallel", short: "n8n forks to three desk systems",
       text: "n8n routes each part to that desk's own system at the same moment (gate booking GATE-1001, accreditation ACC-1001, utilities UTL-1001) and alerts the desk team. Each sees only its own part, already checked.",
       edges: ["e10", "e11a", "e11b", "e11c"], on: ["fork", "dl", "ds", "df"],
-      paths: [[[1150, 370], [1150, 507], [1261, 507], [1261, 449], [1290, 449]],
-              [[1150, 370], [1150, 507], [1290, 507]],
-              [[1150, 370], [1150, 507], [1261, 507], [1261, 565], [1290, 565]]] },
-    { title: "A person approves each part", short: "Desk staff approve",
-      text: "Each desk officer approves with one click, in the staff console or from their own tools through n8n. The agent prepares and people decide. If any desk rejects, the ticket shows Action needed and only that part goes back.",
+      paths: [[[1300, 370], [1300, 507], [1411, 507], [1411, 449], [1440, 449]],
+              [[1300, 370], [1300, 507], [1440, 507]],
+              [[1300, 370], [1300, 507], [1411, 507], [1411, 565], [1440, 565]]] },
+    { title: "SLA watch", short: "Reminder, then escalation",
+      text: "Each part's clock starts when it reaches its desk. Past the desk's target the desk gets one reminder; past the escalation target the supervisor sees it and can reassign it or decide on the desk's behalf.",
+      edges: ["s1"], on: ["nS"], paths: [[[1560, 588], [1560, 690]]] },
+    { title: "A person decides each part", short: "Desk staff approve",
+      text: "Each desk officer decides in the Expo Admin desk console, or from their own tools through n8n: approve, request a change, or reject with a reason. The agent prepares and people decide.",
       edges: ["e12a", "e12b", "e12c"], on: ["join"],
-      paths: [[[1450, 449], [1477, 449]], [[1450, 507], [1477, 507]], [[1450, 565], [1477, 565]]] },
+      paths: [[[1600, 449], [1627, 449]], [[1600, 507], [1627, 507]], [[1600, 565], [1627, 565]]] },
+    { title: "A desk sends one part back", short: "[change requested] that part only",
+      text: "If a desk asks for a change, the ticket shows Partially approved. Munjiz tells the participant the reason in the chat and asks only for that part. Parts already approved stay approved.",
+      edges: ["r1"], on: ["nF"], paths: [[[1500, 426], [1500, 110]]] },
+    { title: "Fixed part goes back", short: "v2 re-checked, same ticket",
+      text: "The participant answers in the same chat. Only that part is re-extracted, re-checked against the desk rules and the other parts, and sent to the same desk as version 2 on the same ticket.",
+      edges: ["r2", "e10"], on: ["n9"], paths: [[[1420, 110], [1420, 345], [1370, 345]]] },
     { title: "Join: the ticket closes", short: "Join closes the ticket",
       text: "When all three desks have approved, the ticket closes as Done.",
-      edges: ["e13"], on: ["n10"], paths: [[[1477, 436], [1477, 370]]] },
+      edges: ["e13"], on: ["n10"], paths: [[[1627, 436], [1627, 370]]] },
     { title: "Participant notified", short: "One notification, done",
       text: "The participant gets one notification in the app. One request. One ticket. Done.",
-      edges: ["e14", "e15"], on: ["n11", "end"], paths: [[[1477, 320], [1477, 85], [1573, 85]]] },
+      edges: ["e14", "e15"], on: ["n11", "end"], paths: [[[1627, 320], [1627, 85], [1723, 85]]] },
     { title: "Organisers see the flow", short: "Events feed the dashboard",
-      text: "Every event (submitted, approved, completed) goes through n8n, which updates the participant in their language and escalates parts waiting over 30 minutes. The same events feed the organiser dashboard.",
+      text: "Every event (submitted, sent back, fixed, approved, SLA alerts, completed) goes through n8n, which updates the participant in their language and alerts desks and the supervisor. The same events feed the organiser dashboard: completion time, SLA breaches by desk and clashes caught before submission.",
       edges: ["o1", "o2"], on: ["n12"],
-      paths: [[[1100, 370], [1100, 651], [1150, 651]], [[1547, 345], [1600, 345], [1600, 651], [1330, 651]]] },
+      paths: [[[1250, 370], [1250, 651], [1300, 651]], [[1697, 345], [1750, 345], [1750, 651], [1480, 651]]] },
   ];
 
   const NS = "http://www.w3.org/2000/svg";

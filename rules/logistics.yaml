@@ -26,6 +26,10 @@ fields:
 
 required: [cargo_description, vehicle_type, vehicle_plate, arrival_datetime]
 
+# Desk response target. The SLA clock starts when this part (or a fixed version of it) reaches the desk.
+# After review_minutes the desk gets a reminder; after escalate_minutes it goes to the supervisor.
+sla: {review_minutes: 120, escalate_minutes: 240}
+
 checks:
   - id: notice
     type: min_notice_hours
@@ -33,8 +37,8 @@ checks:
     hours: 12
     severity: block
     message:
-      en: "Gate slots must be booked at least 12 hours ahead."
-      ar: "يجب حجز موعد البوابة قبل 12 ساعة على الأقل."
+      en: "Gate slots must be booked at least {hours} hours ahead."
+      ar: "يجب حجز موعد البوابة قبل {hours} ساعة على الأقل."
   - id: heavy_vehicle_window
     type: time_window
     field: arrival_datetime
@@ -43,8 +47,8 @@ checks:
     end: "06:00"
     severity: block
     message:
-      en: "While the Expo is open to visitors, heavy trucks may enter only between 22:00 and 06:00."
-      ar: "خلال فترة استقبال الزوار، يُسمح بدخول الشاحنات الكبيرة بين 10 مساءً و6 صباحًا فقط."
+      en: "While the Expo is open to visitors, heavy trucks may enter only between {start} and {end}."
+      ar: "خلال فترة استقبال الزوار، يُسمح بدخول الشاحنات الكبيرة بين {start} و{end} فقط."
 
 # First matching rule wins.
 assign:

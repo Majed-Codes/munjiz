@@ -99,6 +99,75 @@
               },
               "renameOutput": true,
               "outputKey": "Ticket done"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "9d1914ed-c501-5d08-b001-4ef5aa562e78",
+                    "leftValue": "={{ $json.body.event }}",
+                    "rightValue": "sub_resubmitted",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Part fixed and resent"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "6bb881cd-4cd2-5fd6-853f-47cbbc0381fc",
+                    "leftValue": "={{ $json.body.event }}",
+                    "rightValue": "sla_reminder",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SLA reminder"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "f87bf064-eeec-5cd8-9842-efd8ff1fea22",
+                    "leftValue": "={{ $json.body.event }}",
+                    "rightValue": "sla_escalated",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SLA escalation"
             }
           ]
         },
@@ -322,7 +391,7 @@
         440
       ],
       "parameters": {
-        "jsCode": "// Update for the participant, in the language they wrote in.\nconst b = $input.first().json.body;\nconst desks = { logistics: 'Logistics & Site Access', security: 'Accreditation & Security', facilities: 'Facilities & Utilities' };\nconst desksAr = { logistics: 'اللوجستيات ودخول الموقع', security: 'الاعتماد والأمن', facilities: 'المرافق والخدمات' };\nconst ar = b.language === 'ar';\nlet text;\nif (b.event === 'ticket_completed') {\n  text = ar ? `طلبك ${b.ticket_id} منجز. وافقت جميع الجهات.`\n            : `Your request ${b.ticket_id} is done. All desks approved in ${b.minutes_to_complete} min.`;\n} else if (b.status === 'approved') {\n  text = ar ? `${desksAr[b.desk]} وافقت على جزء من طلبك ${b.ticket_id}.` : `${desks[b.desk]} approved its part of ${b.ticket_id}.`;\n} else {\n  text = ar ? `${desksAr[b.desk]} تحتاج تعديلًا على ${b.ticket_id}: ${b.reason}` : `${desks[b.desk]} needs a change on ${b.ticket_id}: ${b.reason}`;\n}\nreturn [{ json: { to: b.pavilion, ticket_id: b.ticket_id, channel: 'Expo app push', text } }];"
+        "jsCode": "// Update for the participant, in the language they wrote in.\nconst b = $input.first().json.body;\nconst desks = { logistics: 'Logistics & Site Access', security: 'Accreditation & Security', facilities: 'Facilities & Utilities' };\nconst desksAr = { logistics: 'اللوجستيات ودخول الموقع', security: 'الاعتماد والأمن', facilities: 'المرافق والخدمات' };\nconst ar = b.language === 'ar';\nlet text;\nif (b.event === 'ticket_completed') {\n  text = ar ? `طلبك ${b.ticket_id} منجز. وافقت جميع الجهات.`\n            : `Your request ${b.ticket_id} is done. All desks approved in ${b.minutes_to_complete} min.`;\n} else if (b.status === 'approved') {\n  text = ar ? `${desksAr[b.desk]} وافقت على جزء من طلبك ${b.ticket_id}.` : `${desks[b.desk]} approved its part of ${b.ticket_id}.`;\n} else if (b.status === 'changes_requested') {\n  text = ar ? `${desksAr[b.desk]} تطلب تعديل جزئها من ${b.ticket_id}: ${b.reason}. افتح منجز وأرسل التصحيح لهذا الجزء فقط.`\n            : `${desks[b.desk]} asks for a change to its part of ${b.ticket_id}: ${b.reason}. Open Munjiz and fix that part only.`;\n} else {\n  text = ar ? `${desksAr[b.desk]} تحتاج تعديلًا على ${b.ticket_id}: ${b.reason}` : `${desks[b.desk]} needs a change on ${b.ticket_id}: ${b.reason}`;\n}\nreturn [{ json: { to: b.pavilion, ticket_id: b.ticket_id, channel: 'Expo app push', text } }];"
       }
     },
     {
@@ -336,6 +405,32 @@
       ],
       "parameters": {},
       "notes": "Connect Expo app push or WhatsApp here",
+      "notesInFlow": true
+    },
+    {
+      "id": "341fbdc7-994f-5b07-9ace-715c04ee29fc",
+      "name": "Compose SLA alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        620
+      ],
+      "parameters": {
+        "jsCode": "// SLA alert: a reminder goes to the desk, an escalation goes to the supervisor.\nconst b = $input.first().json.body;\nconst desks = { logistics: 'Logistics & Site Access', security: 'Accreditation & Security', facilities: 'Facilities & Utilities' };\nconst escalated = b.event === 'sla_escalated';\nreturn [{ json: {\n  to: escalated ? 'Participant services supervisor' : `${desks[b.desk]} desk`,\n  sub_id: b.id, ticket_id: b.ticket_id,\n  text: escalated\n    ? `Escalated: ${b.id} for ${b.pavilion} has waited ${b.waiting_minutes} min at ${desks[b.desk]} (escalation target ${b.escalate_minutes} min).`\n    : `Reminder: ${b.id} for ${b.pavilion} has waited ${b.waiting_minutes} min (target ${b.review_minutes} min). Please review.`,\n} }];"
+      }
+    },
+    {
+      "id": "dce5dcff-65a7-5289-9767-82fb4b544db6",
+      "name": "Alert desk or supervisor",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        720,
+        620
+      ],
+      "parameters": {},
+      "notes": "Connect Slack, Teams or email here",
       "notesInFlow": true
     }
   ],
@@ -370,6 +465,27 @@
         [
           {
             "node": "Compose participant update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One item per desk part",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compose SLA alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compose SLA alert",
             "type": "main",
             "index": 0
           }
@@ -461,6 +577,17 @@
         [
           {
             "node": "Send to participant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose SLA alert": {
+      "main": [
+        [
+          {
+            "node": "Alert desk or supervisor",
             "type": "main",
             "index": 0
           }

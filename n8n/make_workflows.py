@@ -2,10 +2,13 @@
 
 python n8n/make_workflows.py
 
-1. Munjiz · Route ticket to desks   webhook munjiz-events: routes each desk's part to that desk's system,
-                                    alerts the desk, and tells the participant about decisions.
-2. Munjiz · SLA watchdog            every 5 min: finds parts waiting > 30 min and escalates them.
-3. Munjiz · Desk decision intake    webhook desk-decision: lets a desk approve or reject from its own tools.
+1. Munjiz · Route ticket to desks   webhook munjiz-events: routes each desk's part (and every corrected version
+                                    of a part) to that desk's system, alerts the desk, tells the participant about
+                                    decisions, and sends SLA reminders to desks and escalations to the supervisor.
+2. Munjiz · SLA watchdog            every 5 min: asks Munjiz to run the SLA sweep (each overdue part gets one
+                                    reminder, then one escalation); the alerts come back through workflow 1.
+3. Munjiz · Desk decision intake    webhook desk-decision: lets a desk approve, request a change or reject from
+                                    its own tools.
 """
 import json
 import uuid
@@ -109,17 +112,34 @@ if (b.event === 'ticket_completed') {
             : `Your request ${b.ticket_id} is done. All desks approved in ${b.minutes_to_complete} min.`;
 } else if (b.status === 'approved') {
   text = ar ? `${desksAr[b.desk]} وافقت على جزء من طلبك ${b.ticket_id}.` : `${desks[b.desk]} approved its part of ${b.ticket_id}.`;
+} else if (b.status === 'changes_requested') {
+  text = ar ? `${desksAr[b.desk]} تطلب تعديل جزئها من ${b.ticket_id}: ${b.reason}. افتح منجز وأرسل التصحيح لهذا الجزء فقط.`
+            : `${desks[b.desk]} asks for a change to its part of ${b.ticket_id}: ${b.reason}. Open Munjiz and fix that part only.`;
 } else {
   text = ar ? `${desksAr[b.desk]} تحتاج تعديلًا على ${b.ticket_id}: ${b.reason}` : `${desks[b.desk]} needs a change on ${b.ticket_id}: ${b.reason}`;
 }
 return [{ json: { to: b.pavilion, ticket_id: b.ticket_id, channel: 'Expo app push', text } }];"""
+
+SLA_JS = """// SLA alert: a reminder goes to the desk, an escalation goes to the supervisor.
+const b = $input.first().json.body;
+const desks = { logistics: 'Logistics & Site Access', security: 'Accreditation & Security', facilities: 'Facilities & Utilities' };
+const escalated = b.event === 'sla_escalated';
+return [{ json: {
+  to: escalated ? 'Participant services supervisor' : `${desks[b.desk]} desk`,
+  sub_id: b.id, ticket_id: b.ticket_id,
+  text: escalated
+    ? `Escalated: ${b.id} for ${b.pavilion} has waited ${b.waiting_minutes} min at ${desks[b.desk]} (escalation target ${b.escalate_minutes} min).`
+    : `Reminder: ${b.id} for ${b.pavilion} has waited ${b.waiting_minutes} min (target ${b.review_minutes} min). Please review.`,
+} }];"""
 
 route_nodes = [
     node("Munjiz event", "webhook", 2, (0, 300), {"httpMethod": "POST", "path": "munjiz-events",
                                                   "responseMode": "onReceived", "options": {}},
          webhookId=nid("webhook-munjiz-events")),
     switch("Which event?", (240, 300), "={{ $json.body.event }}",
-           [("ticket_submitted", "Ticket submitted"), ("sub_decided", "Desk decided"), ("ticket_completed", "Ticket done")]),
+           [("ticket_submitted", "Ticket submitted"), ("sub_decided", "Desk decided"), ("ticket_completed", "Ticket done"),
+            ("sub_resubmitted", "Part fixed and resent"), ("sla_reminder", "SLA reminder"),
+            ("sla_escalated", "SLA escalation")]),
     code("One item per desk part", (480, 140), SPLIT_JS),
     switch("Which desk?", (720, 140), "={{ $json.desk }}", [(d, title) for d, title, _ in DESKS]),
 ]
@@ -131,44 +151,35 @@ route_nodes += [
     noop("Notify desk team", (1480, 140), "Connect Slack, Teams or email here"),
     code("Compose participant update", (480, 440), PARTICIPANT_JS),
     noop("Send to participant", (720, 440), "Connect Expo app push or WhatsApp here"),
+    code("Compose SLA alert", (480, 620), SLA_JS),
+    noop("Alert desk or supervisor", (720, 620), "Connect Slack, Teams or email here"),
 ]
 route = workflow("MunjizRouteDesks", "Munjiz · Route ticket to desks", route_nodes, link(
     ("Munjiz event", "Which event?"),
     ("Which event?", "One item per desk part", 0),
     ("Which event?", "Compose participant update", 1),
     ("Which event?", "Compose participant update", 2),
+    ("Which event?", "One item per desk part", 3),
+    ("Which event?", "Compose SLA alert", 4),
+    ("Which event?", "Compose SLA alert", 5),
     ("One item per desk part", "Which desk?"),
     *[("Which desk?", system, i) for i, (_, _, system) in enumerate(DESKS)],
     *[(system, "Compose desk alert") for _, _, system in DESKS],
     ("Compose desk alert", "Notify desk team"),
     ("Compose participant update", "Send to participant"),
+    ("Compose SLA alert", "Alert desk or supervisor"),
 ))
 
 # --- 2. SLA watchdog -----------------------------------------------------------------------------
-ESCALATE_JS = """// One escalation per part waiting longer than the target.
-return $input.first().json.items.map((p) => ({
-  json: { desk: p.desk, sub_id: p.id, ticket_id: p.ticket_id,
-          text: `${p.id} for ${p.pavilion} has waited ${p.waiting_minutes} min at ${p.desk}. Please review.` },
-}));"""
-
+# Munjiz owns the SLA state (one reminder, then one escalation per part), so n8n only triggers the sweep.
+# The alerts it produces arrive as sla_reminder / sla_escalated events in workflow 1.
 watch = workflow("MunjizSlaWatchdog", "Munjiz · SLA watchdog", [
     node("Every 5 minutes", "scheduleTrigger", 1.2, (0, 200), {"rule": {"interval": [{"field": "minutes", "minutesInterval": 5}]}}),
     node("Run now", "manualTrigger", 1, (0, 380), {}),
-    http("Parts waiting > 30 min", (240, 280), "GET", f"={API}/api/subrequests/pending",
-         query={"older_than_minutes": "30"}),
-    node("Anything overdue?", "if", 2, (480, 280), {"conditions": {
-        "options": {"caseSensitive": True, "leftValue": "", "typeValidation": "strict"},
-        "conditions": [{"id": nid("overdue"), "leftValue": "={{ $json.count }}", "rightValue": 0,
-                        "operator": {"type": "number", "operation": "gt"}}],
-        "combinator": "and"}, "options": {}}),
-    code("Compose escalations", (720, 200), ESCALATE_JS),
-    noop("Escalate to desk supervisor", (960, 200), "Connect Slack, Teams or email here"),
+    http("Run the SLA sweep in Munjiz", (260, 280), "POST", f"={API}/api/sla/sweep"),
 ], link(
-    ("Every 5 minutes", "Parts waiting > 30 min"),
-    ("Run now", "Parts waiting > 30 min"),
-    ("Parts waiting > 30 min", "Anything overdue?"),
-    ("Anything overdue?", "Compose escalations", 0),
-    ("Compose escalations", "Escalate to desk supervisor"),
+    ("Every 5 minutes", "Run the SLA sweep in Munjiz"),
+    ("Run now", "Run the SLA sweep in Munjiz"),
 ))
 
 # --- 3. Desk decision intake ---------------------------------------------------------------------
@@ -178,7 +189,8 @@ decision = workflow("MunjizDeskDecision", "Munjiz · Desk decision intake", [
          webhookId=nid("webhook-desk-decision")),
     http("Record decision in Munjiz", (260, 200), "POST",
          f"={API}/api/subrequests/{{{{ $json.body.sub_id }}}}/decision",
-         json_body="={{ JSON.stringify({ approve: $json.body.approve, staff: $json.body.staff, reason: $json.body.reason || '' }) }}"),
+         # Passed through as sent: a body with neither decision nor approve gets a 422 from Munjiz, never a rejection.
+         json_body="={{ JSON.stringify({ decision: $json.body.decision, approve: $json.body.approve, staff: $json.body.staff, reason: $json.body.reason || '' }) }}"),
 ], link(("Desk decision", "Record decision in Munjiz")))
 
 

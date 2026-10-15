@@ -6,6 +6,7 @@ from munjiz import expo, simulate, tickets
 from munjiz.agent import desk_title
 from munjiz.config import DESKS
 from munjiz.db import connect
+from munjiz.rules import sla
 from views.common import ago, kpi_cards, page_header
 
 # Categorical slots from the validated reference palette; "before" is a recessive neutral.
@@ -38,7 +39,7 @@ page_header("Organiser dashboard", "Where participant requests wait, and what on
             "Expo 2030 Riyadh participant services across Logistics & Site Access, Accreditation & Security and "
             "Facilities & Utilities.")
 req, steps = load()
-if req.empty:
+if req.empty or "cross_desk_conflict" not in req or req.cross_desk_conflict.isna().all():
     simulate.generate()
     load.clear()
     req, steps = load()
@@ -58,6 +59,19 @@ kpi_cards([
     {"label": "Complete first time", "value": f"{MF:.0%}", "was": f"{LF:.0%}", "change": f"+{(MF - LF) * 100:.0f} pts"},
     {"label": "Forms per request", "value": "1", "was": f"{req.legacy_forms.mean():.1f}",
      "change": f"{1 / req.legacy_forms.mean() - 1:.0%}"},
+])
+
+# Desk response targets (SLA) and clashes between desks.
+target_h = {d: sla(d)["review_minutes"] / 60 for d in DESKS}
+steps = steps.assign(breach=steps.wait_hours > steps.desk.map(target_h))
+breach = steps.groupby("process").breach.mean()
+clashes = int(req.cross_desk_conflict.sum())
+multi = int((req.desks.str.count(",") > 0).sum())
+kpi_cards([
+    {"label": "Desk reviews over their response target", "value": f"{breach['munjiz']:.0%}",
+     "was": f"{breach['legacy']:.0%}", "change": f"{(breach['munjiz'] - breach['legacy']) * 100:+.0f} pts"},
+    {"label": "Clashes between desks caught before submission", "value": f"{clashes}",
+     "change": f"{clashes / multi:.0%} of multi-desk requests · today found after approval"},
 ])
 
 st.subheader("At Expo 2030 Riyadh scale")
@@ -146,6 +160,43 @@ with right:
             st.caption("No live sub-requests waiting.")
 
     live()
+
+left, right = st.columns(2)
+with left:
+    st.subheader("SLA breaches by desk, before vs after")
+    by_desk = steps.groupby(["desk", "process"]).breach.mean().unstack().sort_values("legacy")
+    names = [f"{DESK_NAME[d]} ({sla(d)['review_minutes']} min)" for d in by_desk.index]
+    fig = go.Figure([
+        go.Bar(y=names, x=by_desk.legacy, name="Today", orientation="h", marker_color=BEFORE,
+               text=[f"{v:.0%}" for v in by_desk.legacy], textposition="outside",
+               hovertemplate="%{y}<br>Today: %{x:.0%} of reviews over target<extra></extra>"),
+        go.Bar(y=names, x=by_desk.munjiz, name="Munjiz", orientation="h", marker_color=AFTER,
+               text=[f"{v:.0%}" for v in by_desk.munjiz], textposition="outside",
+               hovertemplate="%{y}<br>Munjiz: %{x:.0%} of reviews over target<extra></extra>"),
+    ])
+    fig.update_xaxes(title="Share of desk reviews over the desk's response target", tickformat=".0%",
+                     range=[0, by_desk.values.max() * 1.18])
+    st.plotly_chart(style(fig, 260), width="stretch", theme=None)
+    st.caption("Response target per desk in brackets (set on the Desk rules page). Pre-checked parts reach "
+               "the desks complete, so they are reviewed well inside the target.")
+
+with right:
+    st.subheader("Live: SLA and clashes")
+
+    @st.fragment(run_every="5s")
+    def live_sla():
+        tickets.sla_sweep()
+        waiting = [tickets.sla_info(s) for d in DESKS for s in tickets.desk_queue(d)]
+        live = tickets.list_tickets()
+        c = st.columns(3)
+        c[0].metric("Parts over target now", sum(w["level"] != "on_time" for w in waiting))
+        c[1].metric("Escalated to supervisor", sum(w["state"] == "escalated" for w in waiting))
+        c[2].metric("Clashes caught live", sum(t.get("conflicts_caught") or 0 for t in live))
+        returned = sum(t["status"] in ("partially_approved", "action_needed") for t in live)
+        st.caption(f"{returned} demo ticket{'s' if returned != 1 else ''} waiting for a participant fix. "
+                   "Each fix goes back as a new version of that part only.")
+
+    live_sla()
 
 with st.expander("Simulation assumptions (replace with organiser figures)"):
     st.dataframe(pd.DataFrame(simulate.ASSUMPTIONS.items(), columns=["Assumption", "Value"]), hide_index=True)

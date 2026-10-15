@@ -20,6 +20,10 @@ fields:
 
 required: [power_kw, needed_from]
 
+# Desk response target. The SLA clock starts when this part (or a fixed version of it) reaches the desk.
+# After review_minutes the desk gets a reminder; after escalate_minutes it goes to the supervisor.
+sla: {review_minutes: 120, escalate_minutes: 240}
+
 checks:
   - id: capacity_limit
     type: max_value
@@ -27,24 +31,24 @@ checks:
     value: 150
     severity: block
     message:
-      en: "Temporary connections are limited to 150 kW. Larger loads need a capacity study."
-      ar: "التوصيلات المؤقتة محدودة بـ 150 كيلوواط، والأحمال الأكبر تحتاج دراسة سعة."
+      en: "Temporary connections are limited to {value} kW. Larger loads need a capacity study."
+      ar: "التوصيلات المؤقتة محدودة بـ {value} كيلوواط، والأحمال الأكبر تحتاج دراسة سعة."
   - id: engineer_signoff
     type: max_value
     field: power_kw
     value: 50
     severity: note
     message:
-      en: "Above 50 kW: an electrical engineer signs off at approval."
-      ar: "فوق 50 كيلوواط: يعتمدها مهندس كهربائي عند الموافقة."
+      en: "Above {value} kW: an electrical engineer signs off at approval."
+      ar: "فوق {value} كيلوواط: يعتمدها مهندس كهربائي عند الموافقة."
   - id: notice
     type: min_notice_hours
     field: needed_from
     hours: 12
     severity: block
     message:
-      en: "Power connections need at least 12 hours' notice."
-      ar: "توصيلات الكهرباء تحتاج إشعارًا قبل 12 ساعة على الأقل."
+      en: "Power connections need at least {hours} hours' notice."
+      ar: "توصيلات الكهرباء تحتاج إشعارًا قبل {hours} ساعة على الأقل."
 
 assign:
   - when: {power_kw: {lte: 22}}

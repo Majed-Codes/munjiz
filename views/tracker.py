@@ -4,7 +4,7 @@ import streamlit as st
 from munjiz import tickets
 from views.common import page_header, ticket_card
 
-page_header("Back office · organisers", "Ticket tracker",
+page_header("Expo Admin · supervisors and organisers", "Ticket tracker",
             "Every ticket, its desk sub-requests and the full event log.")
 
 

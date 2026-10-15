@@ -4,6 +4,9 @@ The same 500 requests are run through two models of the process:
 - legacy: one form per desk, desks one after another, incomplete forms bounce back;
 - munjiz: one conversation, rules checked before submission, desks review in parallel.
 
+Each multi-desk request may also hide a cross-desk clash. Today it is found late, after a desk has approved;
+Munjiz catches it before submission. The clash flag uses its own random stream, so the other numbers don't move.
+
 Every number below is an ASSUMPTION, shown on the dashboard. Replace them with figures from mentors.
 Run: python -m munjiz.simulate
 """
@@ -28,6 +31,7 @@ ASSUMPTIONS = {
     "munjiz_minutes_base": 3,              # one conversation
     "munjiz_minutes_per_extra_desk": 1,
     "security_slowdown": 1.4,              # accreditation checks take longer
+    "cross_desk_conflict_rate": 0.12,      # multi-desk requests whose parts clash (e.g. night truck vs crew hours)
 }
 
 DESK_FACTOR = {"logistics": 1.0, "security": ASSUMPTIONS["security_slowdown"], "facilities": 0.9}
@@ -63,6 +67,7 @@ def _desk_run(rng, desk, median, incomplete_rate, rework_median):
 
 def generate():
     rng = random.Random(SEED)
+    clash_rng = random.Random(SEED + 1)
     a = ASSUMPTIONS
     now = config.now()
     types = list(REQUEST_TYPES)
@@ -99,11 +104,16 @@ def generate():
             len(desks) * a["legacy_minutes_per_form"] + legacy_reworks * a["legacy_minutes_per_rework"],
             a["munjiz_minutes_base"] + (len(desks) - 1) * a["munjiz_minutes_per_extra_desk"],
             len(desks),
+            int(len(desks) > 1 and clash_rng.random() < a["cross_desk_conflict_rate"]),
         ))
 
     with connect() as conn:
         conn.executescript("DELETE FROM hist_requests; DELETE FROM hist_steps;")
-        conn.executemany("INSERT INTO hist_requests VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", requests)
+        conn.executemany(
+            "INSERT INTO hist_requests (request_id, participant_type, pavilion, request_type, desks, submitted_at,"
+            " legacy_hours, munjiz_hours, legacy_first_time, munjiz_first_time, legacy_participant_minutes,"
+            " munjiz_participant_minutes, legacy_forms, cross_desk_conflict) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            requests)
         conn.executemany("INSERT INTO hist_steps VALUES (?,?,?,?,?)", steps)
     return len(requests)
 

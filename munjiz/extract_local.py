@@ -54,7 +54,14 @@ NAME_STOP = {"id", "iqama", "passport", "no", "no.", "number", "national", "and"
              "worker", "workers", "first", "second", "third", "the", "with", "of", "one", "two", "#",
              "رقم", "الهوية", "هوية", "هويته", "الإقامة", "إقامة", "اقامة", "إقامته", "جواز", "جوازه", "السفر",
              "اسمه", "العامل", "العمال", "الأول", "الاول", "الثاني", "الثالث", "و", "هو", "سجل", "مدني",
-             "first:", "second:", "names", "الأسماء", "ids"}
+             "first:", "second:", "names", "الأسماء", "ids",
+             # fix-loop filler: "Ahmed Ali's correct ID is …", "رقم هوية خالد الشمري الصحيح …"
+             "correct", "corrected", "correction", "new", "updated", "update", "right", "fixed", "valid", "actual",
+             "proper", "her", "their", "its", "are", "was", "should", "be", "now", "for", "to", "please", "add",
+             "also", "plus", "here", "here's", "id's", "passport's",
+             "الصحيح", "الصحيحة", "الصحيحه", "الصح", "صحيح", "الجديد", "الجديدة", "الجديده", "جديد", "المحدث",
+             "المحدّث", "المعدل", "المعدّل", "رقمه", "رقمها", "هويتها", "جوازها", "إقامتها", "هي", "أضف", "اضف",
+             "إضافة", "اضافة", "أيضا", "أيضًا", "كذلك", "هذا", "هذه"}
 
 # Names that genuinely start with و, so the attached-"and" strip leaves them alone.
 WAW_NAMES = {"وليد", "وائل", "وجدي", "وسام", "وفاء", "ولاء", "وضاح", "وديع", "وهيب", "وعد", "وداد", "وجدان", "ورد", "وصال"}
@@ -124,11 +131,11 @@ def _workers(text: str) -> list[dict]:
         segment = re.split(r"[\n،,;؛.()\[\]:–—-]", text[last_end:m.start()])
         words = []
         for part in reversed(segment):
-            words = [w for w in part.split() if w.lower() not in NAME_STOP
+            words = [w for w in part.split() if re.sub(r"['’]s$", "", w).lower() not in NAME_STOP
                      and not (w.startswith("و") and w[1:] in NAME_STOP) and not any(c.isdigit() for c in w)]
             if words:
                 break
-        words = words[-4:]
+        words = [re.sub(r"['’]s$", "", w) for w in words[-4:]]  # "Smith's passport" → Smith
         if words and len(words[0]) > 3 and words[0].startswith("و") and words[0] not in WAW_NAMES:
             words[0] = words[0][1:]  # "وخالد" → "خالد" (attached "and")
         out.append({"full_name": " ".join(words), "id_number": m.group(1)})

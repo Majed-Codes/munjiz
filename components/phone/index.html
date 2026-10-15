@@ -80,7 +80,7 @@
   .req .l2 { font-size: 12.5px; color: var(--muted); margin: 3px 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bar { display: flex; gap: 4px; }
   .bar i { flex: 1; height: 5px; border-radius: 999px; background: var(--line); transition: background 0.5s; }
-  .bar i.approved { background: var(--green); } .bar i.rejected { background: #DC2626; }
+  .bar i.approved { background: var(--green); } .bar i.rejected { background: #DC2626; } .bar i.changes_requested { background: #F97316; }
   .more { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .tile { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 10px 4px; text-align: center;
     font-size: 11px; color: var(--muted); opacity: 0.6; }
@@ -115,6 +115,12 @@
   .desk.ok { background: #F0FDF7; border-color: #A7F3D0; } .desk.ok .st { background: var(--mint-2); color: #065F46; }
   .desk.missing { background: var(--amber-bg); border-color: var(--amber-line); } .desk.missing .st { background: #FEF3C7; color: var(--amber-ink); }
   .desk.blocked { background: var(--red-bg); border-color: var(--red-line); } .desk.blocked .st { background: #FEE2E2; color: var(--red-ink); }
+  .desk.conflict { background: #FFF7ED; border-color: #FDBA74; } .desk.conflict .st { background: #FFEDD5; color: #9A3412; }
+  .desk .nt.fix { color: #065F46; font-weight: 600; }
+  .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .acts button { font-size: 13px; font-weight: 700; color: #fff; background: var(--green); padding: 8px 12px; border-radius: 999px;
+    box-shadow: 0 6px 14px rgba(11, 107, 79, 0.25); }
+  .msg.bot.returned { border-color: #FDBA74; background: #FFF7ED; }
   .q { margin-top: 8px; font-weight: 700; }
   .typing { align-self: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 20px; border-bottom-left-radius: 6px;
     padding: 12px 14px; display: flex; gap: 4px; }
@@ -152,6 +158,7 @@
   .pill.approved, .pill.completed { background: var(--mint-2); color: #065F46; }
   .pill.rejected, .pill.action_needed { background: #FEE2E2; color: var(--red-ink); }
   .pill.in_review { background: #E0F2FE; color: #075985; }
+  .pill.changes_requested, .pill.partially_approved { background: #FFEDD5; color: #9A3412; }
 
   /* Composer + confirm */
   #dock { flex: 0 0 auto; padding: 8px 12px 6px; background: rgba(244, 246, 245, 0.96); border-top: 1px solid var(--line); display: none; }
@@ -324,7 +331,7 @@
         <div class="row"><span class="chip">Expo day ${d.expo_day} of ${d.days}</span><span class="chip">${esc(d.role)}</span></div></div>
       <div class="feature"><div class="top"><div class="appicon">✓</div>
         <div><h2>Munjiz <span class="ar">· منجز</span></h2><p>Deliveries, worker passes, power. Ask once and every desk gets it.</p></div></div>
-        <button class="cta" data-go="chat">New request ${ICONS.arrow}</button></div>
+        <button class="cta" ${d.ticket ? 'data-act="new"' : 'data-go="chat"'}>New request ${ICONS.arrow}</button></div>
       <div class="section"><h3>My requests</h3><span>${d.tickets.length ? d.open_count + " open" : ""}</span></div>${reqs}
       <div class="section"><h3>More in the app</h3></div>
       <div class="more">
@@ -335,7 +342,9 @@
 
   function chatView() {
     const d = data;
-    let body = "";
+    let body = "", placed = false;
+    const acts = (m) => m.actions && m.actions.length && !busy
+      ? `<div class="acts">${m.actions.map((x) => `<button data-say="${esc(x)}">✅ ${esc(x)}</button>`).join("")}</div>` : "";
     if (!d.messages.length && !busy) {
       body = `<div class="welcome"><div class="appicon">✓</div><h2>What does your pavilion need?</h2>
         <p>Tell me once, in English or Arabic. I'll split it across the desks, check their rules and send one ticket.</p>
@@ -351,15 +360,17 @@
         if (m.cards && m.cards.length) {
           const cards = m.cards.map((c, i) => `<div class="desk ${c.state}" style="animation-delay:${0.08 * i}s">
             <div class="hd">${c.icon} ${esc(c.title)}<span class="st">${esc(c.state_label)}</span></div>
-            <div class="bd">${c.body}</div>${c.notes.map((n) => `<div class="nt">ℹ️ ${esc(n)}</div>`).join("")}</div>`).join("");
-          body += `<div class="msg bot wide${a}" dir="${m.dir}">${md(m.intro)}${cards}${m.outro ? `<div class="q">${esc(m.outro)}</div>` : ""}</div>`;
+            <div class="bd">${c.body}</div>${c.notes.map((n) => n.startsWith("✅") ? `<div class="nt fix">${esc(n)}</div>`
+              : `<div class="nt">ℹ️ ${esc(n)}</div>`).join("")}</div>`).join("");
+          body += `<div class="msg bot wide${a}" dir="${m.dir}">${md(m.intro)}${cards}${m.outro ? `<div class="q">${md(m.outro)}</div>` : ""}${acts(m)}</div>`;
         } else {
-          body += `<div class="msg bot${a}" dir="${m.dir}">${md(m.text)}</div>`;
+          body += `<div class="msg bot${m.returned ? " returned" : ""}${a}" dir="${m.dir}">${md(m.text)}${acts(m)}</div>`;
         }
+        if (m.anchor && d.ticket) { body += ticketHTML(d.ticket); placed = true; }
       });
       shownMsgs = d.messages.length;
       if (busy) body += `<div class="typing"><i></i><i></i><i></i></div>`;
-      if (d.ticket) body += ticketHTML(d.ticket);
+      if (d.ticket && !placed) body += ticketHTML(d.ticket);
     }
     return `<div class="chathead"><button class="back" data-go="home">${ICONS.back}</button><div class="appicon">✓</div>
       <div><div class="t">Munjiz <span class="ar">· منجز</span></div><div class="s">Request agent · online</div></div></div>
@@ -372,7 +383,8 @@
       const t = d.all_tickets[openTicket];
       return `<div class="chathead"><button class="back" data-go="requests">${ICONS.back}</button>
         <div><div class="t">${openTicket}</div><div class="s">Live status</div></div></div>
-        <div class="msgs">${t ? ticketHTML(t) : '<div class="empty">This ticket was cleared.</div>'}</div>`;
+        <div class="msgs">${t ? ticketHTML(t) : '<div class="empty">This ticket was cleared.</div>'}
+        ${t && t.fix ? `<button class="cta" data-resume="${esc(openTicket)}">${esc(t.fix)} ${ICONS.arrow}</button>` : ""}</div>`;
     }
     const list = d.tickets.length ? d.tickets.map((t) => `
       <button class="req" data-ticket="${t.id}"><div class="l1"><span>${t.id}</span><span class="pill ${t.status}">${esc(t.label)}</span></div>
@@ -384,10 +396,11 @@
   function dockHTML() {
     const d = data;
     if (screen !== "chat") return "";
-    if (d.ticket) return `<button class="newreq" data-act="new">+ New request</button>`;
+    if (d.ticket && !d.fixing) return `<button class="newreq" data-act="new">+ New request</button>`;
     const confirm = d.ready && !busy ? `<button class="confirm" data-act="confirm">${esc(d.confirm_label)} ${ICONS.arrow}</button>` : "";
     return `${confirm}<div class="composer"><input id="inp" placeholder="Message Munjiz…" autocomplete="off" value="${esc(draft)}">
-      <button class="send" id="sendBtn" ${busy ? "disabled" : ""}>${ICONS.send}</button></div>`;
+      <button class="send" id="sendBtn" ${busy ? "disabled" : ""}>${ICONS.send}</button></div>`.replace(
+        "Message Munjiz…", d.fixing ? "Send the corrected details…" : "Message Munjiz…");
   }
 
   function tabsHTML() {
@@ -423,9 +436,9 @@
     } else { view.scrollTop = 0; }
   }
 
-  function send() {
+  function send(forced) {
     const inp = document.getElementById("inp");
-    const text = (inp ? inp.value : draft).trim();
+    const text = (forced || (inp ? inp.value : draft)).trim();
     if (!text || busy) return;
     draft = "";
     busy = true;
@@ -436,9 +449,10 @@
   }
 
   document.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-go],[data-ticket],[data-act],[data-sugg],#sendBtn");
+    const el = e.target.closest("[data-go],[data-ticket],[data-act],[data-sugg],[data-say],[data-resume],#sendBtn");
     if (!el) return;
-    if (el.id === "sendBtn") return send();
+    if (el.id === "sendBtn") return send();  // (no argument: reads the input)
+    if (el.dataset.say) return send(el.dataset.say);
     if (el.dataset.go) return go(el.dataset.go === "chat" ? "chat" : el.dataset.go);
     if (el.dataset.ticket) {
       if (data.ticket && data.ticket.id === el.dataset.ticket) return go("chat");
@@ -447,6 +461,10 @@
     if (el.dataset.sugg) { draft = el.dataset.sugg; render(); const i = document.getElementById("inp"); if (i) { i.focus(); i.setSelectionRange(draft.length, draft.length); } return; }
     if (el.dataset.act === "confirm") { busy = true; render(); return emit("confirm"); }
     if (el.dataset.act === "new") { prevStatus = {}; shownMsgs = 0; shownTicket = null; return emit("new"); }
+    if (el.dataset.resume) {
+      if (data.ticket && data.ticket.id === el.dataset.resume) return go("chat");
+      prevStatus = {}; shownMsgs = 0; shownTicket = null; return emit("resume", el.dataset.resume);
+    }
   });
 
   post("streamlit:componentReady", { apiVersion: 1 });

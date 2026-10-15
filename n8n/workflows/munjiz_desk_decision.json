@@ -43,7 +43,7 @@
         "options": {},
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ approve: $json.body.approve, staff: $json.body.staff, reason: $json.body.reason || '' }) }}"
+        "jsonBody": "={{ JSON.stringify({ decision: $json.body.decision, approve: $json.body.approve, staff: $json.body.staff, reason: $json.body.reason || '' }) }}"
       }
     }
   ],

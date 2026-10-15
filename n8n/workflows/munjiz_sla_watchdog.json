@@ -34,17 +34,17 @@
       "parameters": {}
     },
     {
-      "id": "bf6340f4-9ad8-54cd-b721-051ca4831565",
-      "name": "Parts waiting > 30 min",
+      "id": "95f299d2-a6d4-5c35-867f-a6bb8c5500cd",
+      "name": "Run the SLA sweep in Munjiz",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        240,
+        260,
         280
       ],
       "parameters": {
-        "method": "GET",
-        "url": "={{ $env.MUNJIZ_API_URL }}/api/subrequests/pending",
+        "method": "POST",
+        "url": "={{ $env.MUNJIZ_API_URL }}/api/sla/sweep",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -54,75 +54,8 @@
             }
           ]
         },
-        "options": {},
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "older_than_minutes",
-              "value": "30"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "id": "7ebe4be6-1f81-5e64-87c0-60d6d7ab839f",
-      "name": "Anything overdue?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        480,
-        280
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "ac8c96da-40c2-50cc-9be0-5ef64bff7fac",
-              "leftValue": "={{ $json.count }}",
-              "rightValue": 0,
-              "operator": {
-                "type": "number",
-                "operation": "gt"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
         "options": {}
       }
-    },
-    {
-      "id": "54b8b93b-b279-5ce2-8ef3-755a4842d49b",
-      "name": "Compose escalations",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        720,
-        200
-      ],
-      "parameters": {
-        "jsCode": "// One escalation per part waiting longer than the target.\nreturn $input.first().json.items.map((p) => ({\n  json: { desk: p.desk, sub_id: p.id, ticket_id: p.ticket_id,\n          text: `${p.id} for ${p.pavilion} has waited ${p.waiting_minutes} min at ${p.desk}. Please review.` },\n}));"
-      }
-    },
-    {
-      "id": "a2b8625f-8621-5c51-8c39-6c0cfb502094",
-      "name": "Escalate to desk supervisor",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        960,
-        200
-      ],
-      "parameters": {},
-      "notes": "Connect Slack, Teams or email here",
-      "notesInFlow": true
     }
   ],
   "connections": {
@@ -130,7 +63,7 @@
       "main": [
         [
           {
-            "node": "Parts waiting > 30 min",
+            "node": "Run the SLA sweep in Munjiz",
             "type": "main",
             "index": 0
           }
@@ -141,40 +74,7 @@
       "main": [
         [
           {
-            "node": "Parts waiting > 30 min",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Parts waiting > 30 min": {
-      "main": [
-        [
-          {
-            "node": "Anything overdue?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Anything overdue?": {
-      "main": [
-        [
-          {
-            "node": "Compose escalations",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Compose escalations": {
-      "main": [
-        [
-          {
-            "node": "Escalate to desk supervisor",
+            "node": "Run the SLA sweep in Munjiz",
             "type": "main",
             "index": 0
           }

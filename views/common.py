@@ -5,9 +5,9 @@ from datetime import datetime
 import streamlit as st
 
 from munjiz import config, expo
-from munjiz.agent import AgentResult, desk_title, describe, pick
+from munjiz.agent import AgentResult, desk_title, describe, locked_text, pick
 from munjiz.i18n import fmt_dt
-from munjiz.rules import DeskCheck, load_rules
+from munjiz.rules import DeskCheck, load_cross_desk, load_rules, rule_count  # noqa: F401
 
 GREEN, GREEN_2, INK, MUTED, LINE = "#0B6B4F", "#12805F", "#111827", "#6B7280", "#E5E7EB"
 
@@ -36,7 +36,18 @@ CSS = """
 .pill.pending { background:#FEF3C7; color:#92400E; }
 .pill.approved, .pill.completed { background:#D1FAE5; color:#065F46; }
 .pill.rejected, .pill.action_needed { background:#FEE2E2; color:#991B1B; }
+.pill.changes_requested, .pill.partially_approved { background:#FFEDD5; color:#9A3412; }
 .pill.in_review { background:#E0F2FE; color:#075985; }
+.pill.sla-on_time { background:#F3F4F6; color:#374151; } .pill.sla-overdue { background:#FEF3C7; color:#92400E; }
+.pill.sla-escalate { background:#FEE2E2; color:#991B1B; }
+
+/* Signed-in bar */
+.userbar { display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; justify-content:flex-end; padding-top:6px; }
+.userbar .side { font-size:0.7rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; padding:3px 9px; border-radius:999px; }
+.userbar .side.participant { background:#E0F2FE; color:#075985; } .userbar .side.admin { background:#0B6B4F; color:#fff; }
+.signin-card { border:1px solid #E5E7EB; border-radius:18px; padding:18px 20px 8px; background:#fff; height:100%; }
+.signin-card h3 { margin:0 0 4px !important; } .signin-card p { color:#4B5563; font-size:0.92rem; }
+.conflict-box { border:1px solid #FDBA74; background:#FFF7ED; border-radius:12px; padding:8px 12px; margin:6px 0; font-size:0.9rem; }
 
 /* Presenter side */
 .hero-line { font-size:2.3rem; font-weight:800; line-height:1.05; color:#111827; margin:0.2rem 0 0.3rem; letter-spacing:-0.02em; }
@@ -67,6 +78,7 @@ CSS = """
 .desk.ok { border-color:#A7F3D0; background:#F0FDF7; } .desk.ok .st { background:#D1FAE5; color:#065F46; }
 .desk.missing { border-color:#FDE68A; background:#FFFBEB; } .desk.missing .st { background:#FEF3C7; color:#92400E; }
 .desk.blocked { border-color:#FECACA; background:#FEF2F2; } .desk.blocked .st { background:#FEE2E2; color:#991B1B; }
+.desk.conflict { border-color:#FDBA74; background:#FFF7ED; } .desk.conflict .st { background:#FFEDD5; color:#9A3412; }
 .desk .bd { font-size:0.8rem; color:#374151; margin-top:4px; line-height:1.35; }
 .desk .note { font-size:0.74rem; color:#1D4ED8; margin-top:3px; }
 .intro { font-size:0.88rem; color:#0F172A; }
@@ -80,6 +92,7 @@ CSS = """
 .tk .bar { display:flex; gap:4px; margin:10px 0 8px; }
 .tk .bar span { flex:1; height:6px; border-radius:999px; background:#E5E7EB; transition: background 0.4s; }
 .tk .bar span.approved { background:#0B6B4F; } .tk .bar span.rejected { background:#DC2626; }
+.tk .bar span.changes_requested { background:#F97316; }
 .tk .row { display:flex; align-items:center; gap:8px; padding:5px 0; border-top:1px solid #F3F4F6; font-size:0.8rem; }
 .tk .row .who { font-size:0.68rem; color:#6B7280; }
 .tk .row .pill { margin-left:auto; }
@@ -114,6 +127,8 @@ STATUS = {
     "in_review": {"en": "In review", "ar": "قيد المراجعة"},
     "completed": {"en": "Done", "ar": "منجز"},
     "action_needed": {"en": "Action needed", "ar": "يحتاج إجراء"},
+    "changes_requested": {"en": "Change requested", "ar": "مطلوب تعديل"},
+    "partially_approved": {"en": "Partially approved", "ar": "موافقة جزئية"},
 }
 
 
@@ -127,10 +142,13 @@ def expo_header():
     phase = expo.phase(now)
     day = f"Expo day {expo.expo_day(now)} of {expo.DAYS}" if phase == "operations" else expo.PHASE_LABEL[phase]["en"]
     sim = " · simulated" if config.CLOCK == "expo" else ""
+    user = st.session_state.get("user")
+    side = ("Expo Admin console" if user and user["role"] != "participant" else
+            "Participant app" if user else "Participant request agent")
     st.markdown(
         '<div class="brandbar"><div class="left"><div class="mark">✓</div><div>'
         '<div class="name">Munjiz <span class="ar">· منجز</span></div>'
-        '<div class="sub">Participant request agent · Expo 2030 Riyadh · Challenge 5.5</div></div></div>'
+        f'<div class="sub">{side} · Expo 2030 Riyadh · Challenge 5.5</div></div></div>'
         '<div class="right"><span class="chip">1 Oct 2030 – 31 Mar 2031</span>'
         f'<span class="chip">🕒 {day} · {now:%a %d %b, %H:%M}{sim}</span></div></div>', unsafe_allow_html=True)
 
@@ -184,6 +202,10 @@ def duration(secs: float, lang: str = "en") -> str:
     return f"{secs // 3600} {h} {secs % 3600 // 60:02d} {m}"
 
 
+def md_plain(s: str) -> str:
+    return s.replace("**", "")
+
+
 def md_bold(s: str) -> str:
     return re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", html.escape(s, quote=False))
 
@@ -196,11 +218,13 @@ DESK_STATE = {
     "ok": {"en": "✓ Ready", "ar": "✓ جاهز"},
     "missing": {"en": "Needs info", "ar": "ينقصه معلومات"},
     "blocked": {"en": "Rule", "ar": "مخالفة قاعدة"},
+    "conflict": {"en": "Clash between desks", "ar": "تعارض بين الجهات"},
 }
 
 
 def desk_cards(result: AgentResult) -> list[dict]:
-    """Snapshot of each desk's sub-request for the chat: state plus what's missing or what will be booked."""
+    """Snapshot of each desk's sub-request for the chat: state plus what's missing or what will be booked.
+    A last card shows clashes between desks (the cross-desk check), with the suggested fix."""
     lang, cards = result.language, []
     for desk, check in result.checks.items():
         count = check.payload.get("worker_count")
@@ -212,6 +236,20 @@ def desk_cards(result: AgentResult) -> list[dict]:
         cards.append({"desk": desk, "state": state, "missing": missing, "problems": problems,
                       "notes": [i.message[lang] for i in check.notes],
                       "detail": describe(check, lang) if check.ok else ""})
+    for card in cards:
+        rules = load_rules()[card["desk"]]
+        card.update(icon=rules["icon"], title=rules["title"][lang])
+    clashes = result.blocking_conflicts
+    if clashes:
+        cross = load_cross_desk()
+        locked = [locked_text(c, result.locked, lang) for c in clashes]
+        cards.append({"desk": "cross_desk", "state": "conflict", "missing": [], "notes": [],
+                      "problems": [c.message[lang] for c in clashes] + [md_plain(x) for x in locked if x],
+                      "fixes": [c.fix[lang] for c, lock in zip(clashes, locked) if c.fix and not lock],
+                      "icon": cross["icon"], "title": cross["title"][lang], "detail": ""})
+    for card in cards:
+        card.setdefault("fixes", [])
+        card["notes"] += [c.message[lang] for c in result.conflicts if not c.blocking and card["desk"] in c.desks]
     return cards
 
 
@@ -223,7 +261,9 @@ def render_desk_cards(cards: list[dict], lang: str) -> str:
         else:
             body = "<br>".join("• " + html.escape(x) for x in c["missing"] + c["problems"])
         notes = "".join(f'<div class="note">ℹ️ {html.escape(n)}</div>' for n in c["notes"])
-        out.append(f'<div class="desk {c["state"]}"><div class="hd">{desk_title(c["desk"], lang)}'
+        fixes = "".join(f'<div class="note">✅ {html.escape(f)}</div>' for f in c.get("fixes", []))
+        notes += fixes
+        out.append(f'<div class="desk {c["state"]}"><div class="hd">{c["icon"]} {html.escape(c["title"])}'
                    f'<span class="st">{DESK_STATE[c["state"]][lang]}</span></div><div class="bd">{body}</div>{notes}</div>')
     return "".join(out)
 
@@ -262,6 +302,8 @@ def ticket_card(ticket: dict, lang: str = "en"):
         st.markdown(f"### Ticket {ticket['id']} &nbsp; {pill(ticket['status'], lang)}", unsafe_allow_html=True)
         for sub in ticket["subs"]:
             line = f"<b>{desk_title(sub['desk'], lang)}</b> &nbsp; {pill(sub['status'], lang)} &nbsp; <code>{sub['id']}</code>"
+            if (sub.get("version") or 1) > 1:
+                line += f" &nbsp; v{sub['version']} (fixed by the participant)"
             if sub["status"] != "pending":
                 line += f" &nbsp;·&nbsp; {sub['decided_by']} · {fmt_dt(sub['decided_at'], lang)}"
             if sub.get("reason"):
@@ -278,10 +320,33 @@ def ticket_card(ticket: dict, lang: str = "en"):
         cols[2].metric("Desks approved", f"{approved} / {len(ticket['subs'])}")
 
 
-def rule_count(desk: str) -> int:
-    rules = load_rules()[desk]
-    return len(rules["required"]) + len(rules.get("checks", []))
+def sla_pill(info: dict) -> str:
+    label = {"on_time": f"⏱ {info['waited_minutes']:.0f} of {info['review_minutes']} min",
+             "overdue": f"⏰ Overdue · {info['waited_minutes']:.0f} min (target {info['review_minutes']})",
+             "escalate": f"🚨 Escalated · {info['waited_minutes']:.0f} min"}[info["level"]]
+    return f'<span class="pill sla-{info["level"]}">{label}</span>'
+
+
+def user_bar():
+    """Who is signed in, which side they are on, and sign-out."""
+    from munjiz.users import ROLE_LABEL
+    user = st.session_state.get("user")
+    if not user:
+        return
+    side = "participant" if user["role"] == "participant" else "admin"
+    left, right = st.columns([5, 1], vertical_alignment="center")
+    where = "" if user.get("pavilion") else (load_rules()[user["desk"]]["title"]["en"] if user.get("desk") else "all desks")
+    left.markdown(f'<div class="userbar"><span class="side {side}">{"Participant" if side == "participant" else "Expo Admin"}</span>'
+                  f'<b>{html.escape(user["name"])}</b> · {ROLE_LABEL[user["role"]].split(" · ")[1]}'
+                  + (f' · {html.escape(where)}' if where else "") + '</div>',
+                  unsafe_allow_html=True)
+    if right.button("Sign out", key="sign_out", width="stretch"):
+        for k in list(st.session_state.keys()):
+            del st.session_state[k]
+        st.query_params.clear()
+        st.rerun()
 
 
 __all__ = ["page_header", "kpi_cards", "expo_header", "expo_footer", "inject_css", "text", "pill", "ago", "duration", "describe_sub",
-           "ticket_card", "ticket_mini", "desk_cards", "render_desk_cards", "rule_count", "pick", "desk_title"]
+           "ticket_card", "ticket_mini", "desk_cards", "render_desk_cards", "rule_count", "pick", "desk_title",
+           "sla_pill", "user_bar"]
