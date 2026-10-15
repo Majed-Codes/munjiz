@@ -71,6 +71,19 @@ def _norm(text: str) -> str:
     return text.translate(_DIGITS)
 
 
+def _day_offset(low: str, time_at: int) -> int | None:
+    """The day word closest to the time: in "our National Day is the day after tomorrow; the truck comes tomorrow
+    at 10 pm" the truck comes tomorrow. Longer phrases are matched first, so "tomorrow" inside "day after
+    tomorrow" is not counted twice."""
+    taken, found = [False] * len(low), []
+    for word, days in DAY_WORDS:
+        for hit in re.finditer(re.escape(word), low):
+            if not any(taken[hit.start():hit.end()]):
+                taken[hit.start():hit.end()] = [True] * len(word)
+                found.append((min(abs(hit.start() - time_at), abs(hit.end() - time_at)), days))
+    return min(found)[1] if found else None
+
+
 def parse_datetime(text: str, now: datetime) -> str | None:
     low = text.lower()
     m = TIME_EN.search(low)
@@ -90,7 +103,7 @@ def parse_datetime(text: str, now: datetime) -> str | None:
     if hour is None:
         return None
 
-    offset = next((d for w, d in DAY_WORDS if w in low), None)
+    offset = _day_offset(low, m.start())
     if offset is None:
         for i, name in enumerate(EN_WEEKDAYS):
             if name in low:

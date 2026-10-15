@@ -188,8 +188,10 @@ def test_crew_hours_are_editable():
 
 
 # --- API -----------------------------------------------------------------------------------------
-def test_api_request_change_and_sla_sweep():
+def test_api_request_change_and_sla_sweep(monkeypatch):
+    from munjiz import config
     from munjiz.api import app
+    monkeypatch.setattr(config, "now", lambda: NOW)  # the sweep reads the clock; keep it at submission time
     api = TestClient(app)
     tid, _ = submitted_ticket()
     headers = {"X-Munjiz-Token": TOKEN}

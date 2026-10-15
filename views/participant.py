@@ -10,7 +10,7 @@ from datetime import datetime
 
 import streamlit as st
 
-from munjiz import chat, config, conflicts, expo, tickets
+from munjiz import chat, config, conflicts, expo, osaka, tickets
 from munjiz.agent import run_fix, run_turn
 from munjiz.chat import is_yes, wants_fix
 from munjiz.i18n import detect_lang, fmt_dt, t
@@ -432,17 +432,28 @@ with panel:
 
     st.markdown('<div class="demo-label">Demo scripts <span>· sends the message into the app</span></div>',
                 unsafe_allow_html=True)
+    # A real Expo 2025 Osaka National Day: this pavilion's own if it held one, else Saudi Arabia's.
+    country = ss.pavilion.replace(" Pavilion", "")
+    days = osaka.national_days()
+    osaka_day = next((d for d in days if d["participant"] == country), next(d for d in days if d["code"] == "SAU"))
+    osaka_case = osaka.case(osaka_day)
     fixing_now = bool(returned_parts())
     others_waiting = [w["id"] for w in chat.waiting_for_fix(ss.pavilion) if w["id"] != ss.ticket_id]
     with st.container(key="demo", horizontal=True):
         for label, msg in DEMO:
             st.button(label, key=f"demo_{label}", disabled=bool(ss.ticket_id), on_click=send_demo, args=(msg,))
+        for n, msg in enumerate(osaka_case["messages"], 1):
+            st.button(f"Osaka case {n}", key=f"demo_osaka_{n}", disabled=bool(ss.ticket_id), on_click=send_demo,
+                      args=(msg,))
         if fixing_now:
             for label, msg in FIX_DEMO:
                 st.button(label, key=f"demo_{label}", on_click=send_demo, args=(msg,))
         st.button("New request", type="primary", on_click=reset)
         for tid in others_waiting[:3]:  # a desk sent a part back on an earlier request
             st.button(f"Continue fixing {tid}", key=f"resume_{tid}", on_click=resume, args=(tid,))
+    st.caption(f"Osaka cases: {osaka_day['participant']} held its National Day at Expo 2025 Osaka on "
+               f"{datetime.fromisoformat(osaka_day['osaka_date']):%-d %b %Y} (day {osaka_day['expo_day']}). The "
+               "same request, sent to Munjiz two days ahead; crew names and IDs are made up.")
     if fixing_now:
         st.caption("A desk sent a part back. Fix scripts: John Smith's passport (English demo) or "
                    "Khalid Al-Shammari's ID (Arabic demo).")

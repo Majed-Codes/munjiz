@@ -2,7 +2,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from munjiz import expo, simulate, tickets
+from munjiz import expo, osaka, simulate, tickets
 from munjiz.agent import desk_title
 from munjiz.config import DESKS
 from munjiz.db import connect
@@ -97,6 +97,49 @@ st.caption(f"At Osaka's rate per participant, Riyadh's {expo.FACTS['expected_par
            "Expo 2020 Dubai, the last Expo in the Gulf, had "
            f"{expo.DUBAI_2020['participants']} countries and {expo.DUBAI_2020['visits_millions']} million visits. Sources: "
            + " · ".join(f"[{name}]({url})" for name, url in expo.PRECEDENT_SOURCES))
+
+st.subheader("Osaka 2025 replay")
+st.caption("Real data from the last World Expo: staff and contractor entries on site passes, day by day, and the "
+           "163 National and Special Days. Each National Day was replayed through Munjiz as that participant's "
+           "request for the same day of Expo 2030 Riyadh: equipment the night before, crew passes, power for the "
+           "ceremony. Request wording, plates and crew details are generated; dates and participants are real.")
+
+
+@st.cache_data(show_spinner=False)
+def osaka_replay():
+    results, skipped = osaka.replay()
+    return pd.DataFrame(results), len(skipped)
+
+
+rep, rep_skipped = osaka_replay()
+daily = pd.DataFrame(osaka.daily_attendance())
+nd = pd.DataFrame(osaka.national_days()).merge(daily[["expo_day", "staff_entries"]], on="expo_day")
+fig = go.Figure([
+    go.Scatter(x=daily.date, y=daily.staff_entries, mode="lines", name="Staff and contractor entries",
+               line=dict(color=BEFORE, width=2), hovertemplate="%{x}<br>%{y:,} entries<extra></extra>"),
+    go.Scatter(x=nd.osaka_date, y=nd.staff_entries, mode="markers", name="National or Special Day",
+               marker=dict(color=AFTER, size=8, line=dict(color=STAGE, width=2)), customdata=nd.participant,
+               hovertemplate="%{x}<br>%{customdata} National Day<br>%{y:,} entries<extra></extra>"),
+])
+fig.update_yaxes(title="Entries per day", tickformat=",", gridcolor=GRID, tickfont=dict(color=AXIS))
+fig.update_xaxes(title="Expo 2025 Osaka, 13 Apr – 13 Oct 2025", gridcolor="rgba(0,0,0,0)")
+st.plotly_chart(style(fig, height=300), width="stretch", theme=None)
+ok = rep.ready & rep.on_time & rep.crew_ok & rep.kw_ok
+kpi_cards([
+    {"label": "Real National Days replayed", "value": f"{len(rep)}",
+     "change": f"{rep_skipped} more fell after Riyadh's 182nd day"},
+    {"label": "Asked once for what was missing", "value": f"{rep.asked_once.mean():.0%}",
+     "change": f"{rep.asked_once.sum()} of {len(rep)} requests"},
+    {"label": "Ready for all 3 desks after one answer", "value": f"{ok.mean():.0%}",
+     "change": "truck slot, crew passes and kW all read correctly"},
+    {"label": "Written in Arabic", "value": f"{(rep.lang == 'ar').sum()}",
+     "change": "Arab League participants; the rest in English"},
+])
+st.caption(f"Peak day at Osaka: {daily.staff_entries.max():,} staff and contractor entries "
+           f"({daily.loc[daily.staff_entries.idxmax(), 'date']}). The replay first found a bug in the offline "
+           "parser: with \"the day after tomorrow\" and \"tomorrow at 10 pm\" in one message it booked the wrong "
+           "day. Fixed and covered by tests/test_osaka_replay.py. Data: datasets/osaka2025, built by "
+           "scripts/osaka2025_build.py from the organiser's figures as published on Wikipedia.")
 
 st.subheader("At Expo 2030 Riyadh scale")
 s1, s2, s3 = st.columns(3)
