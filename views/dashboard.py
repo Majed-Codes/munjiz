@@ -76,6 +76,28 @@ kpi_cards([
      "change": f"{clashes / multi:.0%} of multi-desk requests · today found after approval"},
 ])
 
+st.subheader("What the last World Expo tells us")
+O = expo.OSAKA_2025
+st.caption(f"Real figures from Expo 2025 Osaka, Kansai: {O['participants']} countries and regions and "
+           f"{O['international_orgs']} international organisations over {O['days']} days. They show how much "
+           "participants depend on the service desks, before and during the Expo.")
+kpi_cards([
+    {"label": "Site passes issued to staff and contractors", "value": f"{O['site_passes']:,}",
+     "change": f"{O['site_passes_day']:,} were one-day passes: each one a request to accreditation"},
+    {"label": "Self-built pavilions finished on schedule", "value": f"{O['built_on_time']} of {O['type_a_pavilions']}",
+     "change": f"target mid-Oct 2024; {O['type_a_done_before_opening']} were done two days before opening"},
+    {"label": "Pavilions not ready on opening day", "value": f"{O['not_ready_opening_day']}",
+     "change": f"the last one opened {O['last_pavilion_days_late']} days after the Expo did"},
+    {"label": "Unpaid construction reports", "value": f"{O['unpaid_construction_reports']}",
+     "change": "by Aug 2025; some pavilions were built without the required permits"},
+])
+riyadh_passes = round(O["site_passes"] * expo.FACTS["expected_participating_countries"] / O["participants"], -3)
+st.caption(f"At Osaka's rate per participant, Riyadh's {expo.FACTS['expected_participating_countries']} expected "
+           f"countries would need about {riyadh_passes:,.0f} site passes, before any delivery or power request. "
+           "Expo 2020 Dubai, the last Expo in the Gulf, had "
+           f"{expo.DUBAI_2020['participants']} countries and {expo.DUBAI_2020['visits_millions']} million visits. Sources: "
+           + " · ".join(f"[{name}]({url})" for name, url in expo.PRECEDENT_SOURCES))
+
 st.subheader("At Expo 2030 Riyadh scale")
 s1, s2, s3 = st.columns(3)
 participants = s1.number_input("Participating countries", 50, 250, expo.FACTS["expected_participating_countries"],

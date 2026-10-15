@@ -23,6 +23,38 @@ SOURCES = [
     ("Expo 2030 Riyadh news hub", "https://www.expo2030riyadh.sa/news-hub/commissioner-general-expo-2030-riyadh-heads-saudi-delegation-bie-paris"),
 ]
 
+# The last World Expo (Expo 2025 Osaka, Kansai) and the last one in the Gulf (Expo 2020 Dubai). Public figures,
+# checked on 2026-10-15. They anchor the dashboard's volumes in what really happened; none of this is Riyadh data.
+OSAKA_2025 = {
+    "days": 184,                          # 13 Apr - 13 Oct 2025
+    "participants": 158,                  # countries and regions
+    "international_orgs": 7,
+    "visitors_millions": 29.02,
+    "self_built_countries": 52,           # 47 Type A + 5 Type X; the other countries shared Commons pavilions
+    "type_a_pavilions": 42,
+    "built_on_time": 3,                   # international pavilions finished by 27 Dec 2024 (target: mid-Oct 2024)
+    "type_a_done_before_opening": 39,     # by 11 Apr 2025, two days before opening
+    "not_ready_opening_day": 5,           # Nepal, India, Vietnam, Brunei, Chile on 13 Apr 2025
+    "last_pavilion_days_late": 97,        # the last pavilion opened on 19 Jul 2025
+    "unpaid_construction_reports": 11,    # reported to the Expo Association by Aug 2025
+    "site_passes": 607_131,               # AD passes issued to staff and contractors
+    "site_passes_day": 381_534,
+    "site_passes_permanent": 143_372,
+    "site_passes_site_access": 82_225,
+}
+DUBAI_2020 = {
+    "days": 182,
+    "participants": 192,                  # countries
+    "multilateral_orgs": 14,
+    "visits_millions": 24.1,
+}
+PRECEDENT_SOURCES = [
+    ("Expo 2025 Osaka, Kansai in data (organiser)", "https://www.expo2025.or.jp/en/expo_data/"),
+    ("Expo 2025 pavilions (construction and opening dates)", "https://en.wikipedia.org/wiki/Expo_2025_pavilions"),
+    ("Japan Today: unpaid pavilion subcontractors", "https://japantoday.com/category/features/kuchikomi/Osaka-Expo-building-subcontractors-royally-stiffed-by-deadbeat-clients"),
+    ("Dubai Media Office: Expo 2020 Dubai closing figures", "https://mediaoffice.ae/en/news/2022/April/02-04/Dubai-delivers-on-promise-recording-over-24-million-visits-at-Expo-2020-Dubai"),
+]
+
 # Who files requests. Countries listed have publicly confirmed or signed participation (2026);
 # the organisation and corporate entries are placeholders.
 PARTICIPANTS = {
