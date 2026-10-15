@@ -293,6 +293,15 @@ def desk_queue(desk: str, status: str = PENDING) -> list[dict]:
         return [row(r) for r in rows]
 
 
+def recent_events(limit: int = 30) -> list[dict]:
+    """Newest ticket events first, with the ticket's pavilion: the Expo Admin activity feed."""
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT e.*, t.pavilion FROM events e LEFT JOIN tickets t ON t.id = e.ticket_id"
+            " WHERE e.ticket_id IS NOT NULL ORDER BY e.id DESC LIMIT ?", (limit,))
+        return [row(r) for r in rows]
+
+
 def reset_live():
     """Clear demo tickets; simulated history, users and rule changes stay."""
     with connect() as conn:

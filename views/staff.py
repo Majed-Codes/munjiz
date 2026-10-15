@@ -6,20 +6,10 @@ from munjiz import config, conflicts, tickets
 from munjiz.agent import desk_title
 from munjiz.rules import check_desk, rule_count
 from munjiz.users import DESK_STAFF, SUPERVISOR
+from views.admin_phone import CHANGE_REASONS, REJECT_REASONS, worker_reasons
 from views.common import ago, describe_sub, desk_icon, icon, page_header, pill, sla_pill
 
 user = st.session_state.user
-
-CHANGE_REASONS = {
-    "logistics": ["Plate number unreadable, please re-send", "Please pick another time slot"],
-    "security": ["Passport copy needed for a non-Saudi worker"],
-    "facilities": ["Please confirm the load in kW", "Please pick another connection time"],
-}
-REJECT_REASONS = {
-    "logistics": ["Gate fully booked at that time", "Vehicle not allowed on the service road"],
-    "security": ["Worker not cleared for site access"],
-    "facilities": ["Capacity exceeded at this pavilion"],
-}
 
 page_header("Expo Admin · desk staff", "Desk console",
             "Each desk sees only its part of the ticket, already checked against its rules and against the other "
@@ -48,10 +38,6 @@ def decide(sub_id: str, outcome: str, reason_key: str = "", note_key: str = ""):
     label = {"approve": "approved", "request_change": "sent back for a change", "reject": "rejected"}[outcome]
     st.toast(f"{sub_id} {label}", icon=":material/check_circle:" if outcome == "approve"
              else ":material/undo:" if outcome == "request_change" else ":material/block:")
-
-
-def worker_reasons(sub: dict) -> list[str]:
-    return [f"{w.get('full_name', 'A worker')}'s ID could not be verified" for w in sub["payload"].get("workers", [])]
 
 
 @st.fragment(run_every="3s")

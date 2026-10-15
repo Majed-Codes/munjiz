@@ -16,6 +16,8 @@ from munjiz.chat import is_yes, wants_fix
 from munjiz.i18n import detect_lang, fmt_dt, t
 from munjiz.tickets import RETURNED
 from views.common import STATUS, badge, desk_cards, desk_icon, desk_title, duration, icon, md_bold, rule_count
+from views.admin_phone import admin_data, admin_phone
+from views.admin_phone import decide as admin_decide
 from views.phone_component import phone
 
 CONFLICT_DEMO = ("Our truck brings LED screens the day after tomorrow at 2 am, plate ABC 1234. Two workers come with "
@@ -41,7 +43,7 @@ user = ss.user
 for key, default in {"conv": [], "result": None, "ticket_id": None, "started_at": None, "force": None,
                      "last_event": None, "contact": expo.ROLES[2], "backend": config.BACKEND,
                      "patch": {}, "conflicts_seen": set(), "fix_msgs": [], "fix_patch": {}, "announced": set(),
-                     "resume_checked": False}.items():
+                     "resume_checked": False, "last_admin_event": None, "show_admin": True}.items():
     ss.setdefault(key, default)
 ss.pavilion = user["pavilion"]  # a participant only acts for their own pavilion
 
@@ -304,7 +306,10 @@ def phone_data() -> dict:
     }
 
 
-phone_col, panel = st.columns([1, 1.15], gap="large")
+if ss.show_admin:  # stage view: the participant's phone and an Expo Admin phone side by side
+    phone_col, admin_col, panel = st.columns([1, 1, 1.05], gap="medium")
+else:
+    phone_col, panel = st.columns([1, 1.15], gap="large")
 
 with phone_col:
     @st.fragment(run_every="2s")
@@ -329,13 +334,28 @@ with phone_col:
 
     phone_fragment()
 
+if ss.show_admin:
+    with admin_col:
+        @st.fragment(run_every="2s")
+        def admin_fragment():
+            event = admin_phone(data=admin_data(), key="munjiz_admin_phone", default=None)
+            if event and event.get("nonce") != ss.last_admin_event:
+                ss.last_admin_event = event["nonce"]
+                if admin_decide(event):
+                    st.rerun()  # whole page, so the participant's ticket and the trace update at once
+
+        admin_fragment()
+
 # --- Presenter side: the story and the live agent trace ------------------------------------------
 with panel:
-    st.markdown('<div class="lead">' + badge('<span class="dot"></span>Live demo · Participant app', "outline")
+    st.markdown('<div class="lead">' + badge('<span class="dot"></span>Live demo · Participant app' + (' + Expo Admin' if ss.show_admin else ''), "outline")
                 + '<h2>One request. One ticket. Done.</h2><div class="ar">طلب واحد. تذكرة واحدة. منجز.</div>'
                 '<p>Munjiz lives inside the Expo 2030 Riyadh app. A pavilion team asks once; the agent splits the '
                 'request across the service desks, checks each desk\'s rules and the clashes between them, and sends '
-                'one ticket. Expo Admin staff decide.</p></div>', unsafe_allow_html=True)
+                'one ticket. Expo Admin staff decide.</p>'
+                + ('<p>Next to it, Expo Admin on a desk officer\'s phone: each desk\'s part lands there the moment the '
+                   'participant confirms, and every decision shows on the participant\'s ticket.</p>' if ss.show_admin else '')
+                + '</div>', unsafe_allow_html=True)
 
     @st.fragment(run_every="2s")
     def trace():
@@ -430,5 +450,6 @@ with panel:
     with st.expander("Presenter settings"):
         st.markdown(f"Signed in for **{ss.pavilion}** · {expo.PARTICIPANTS[ss.pavilion]}")
         st.selectbox("Role", expo.ROLES, key="contact")
+        st.toggle("Show the Expo Admin phone", key="show_admin")
         st.radio("Agent backend", ["local", "claude"], key="backend", horizontal=True,
                  format_func={"local": "Offline parser (free)", "claude": "Claude (API)"}.get)
