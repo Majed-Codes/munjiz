@@ -63,7 +63,7 @@ def queue():
     for sub in pending:
         ticket = tickets.get_ticket(sub["ticket_id"])
         info = tickets.sla_info(sub)
-        with st.container(border=True):
+        with st.container(border=True, key=f"glass_q_{sub['id']}"):
             version = sub.get("version") or 1
             head = (f"**{sub['id']}** · ticket `{sub['ticket_id']}` · {sub['pavilion']} · "
                     f"submitted {ago(sub.get('submitted_at') or sub['created_at'])} &nbsp; {sla_pill(info)}")

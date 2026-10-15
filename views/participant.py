@@ -331,7 +331,8 @@ with phone_col:
 
 # --- Presenter side: the story and the live agent trace ------------------------------------------
 with panel:
-    st.markdown('<div class="hero-line">One request.<br>One ticket. <span class="g">Done.</span></div>'
+    st.markdown('<div class="eyebrow-x">Live demo · Participant app</div>'
+                '<div class="hero-line">One request.<br>One ticket. <span class="g">Done.</span></div>'
                 '<div class="hero-ar">طلب واحد. تذكرة واحدة. منجز.</div>'
                 '<div class="hero-sub">Munjiz lives inside the Expo 2030 Riyadh app. A pavilion team asks once; '
                 'the agent splits the request across the service desks, checks each desk\'s rules and the clashes '
@@ -403,12 +404,13 @@ with panel:
         steps.append(step("done" if ticket and ticket["status"] == "completed" else "active" if ticket else "pending",
                           "Expo Admin staff decide (a human always decides)",
                           f"{approved} of {len(ticket['subs'])} approved" if ticket else ""))
-        st.markdown('<div class="trace"><h4>Agent trace · live</h4>' + "".join(steps) + "</div>",
+        st.markdown('<div class="trace"><h4><span class="live-dot"></span>Agent trace · live</h4>' + "".join(steps) + "</div>",
                     unsafe_allow_html=True)
 
     trace()
 
-    st.markdown("**Demo scripts** · sends the message into the app")
+    st.markdown('<div class="demo-label"><b>Demo scripts</b> · sends the message into the app</div>',
+                unsafe_allow_html=True)
     fixing_now = bool(returned_parts())
     others_waiting = [w["id"] for w in chat.waiting_for_fix(ss.pavilion) if w["id"] != ss.ticket_id]
     with st.container(key="demo", horizontal=True):

@@ -20,15 +20,31 @@ def enter(user: dict | None):
     st.rerun()
 
 
-st.markdown('<div class="hero-line">Sign in to <span class="g">Munjiz</span></div>'
-            '<div class="hero-sub">Two sides, one ticket between them. Pavilion teams ask; Expo Admin staff decide. '
-            'Each side only sees what it needs.</div>', unsafe_allow_html=True)
+PHONE_ICON = ('<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
+              'stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/>'
+              '<path d="M10.5 18.5h3"/><path d="m9.5 10.5 1.8 1.8 3.4-3.6"/></svg>')
+DESK_ICON = ('<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
+             'stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 19.5 6v5.6c0 4.6-3.2 8.2-7.5 9.6-4.3-1.4-7.5-5-7.5-9.6V6z"/>'
+             '<path d="m8.8 12 2.2 2.2 4.3-4.4"/></svg>')
+
+
+def door(kind: str, icon: str, eyebrow: str, title: str, text: str):
+    st.markdown(f'<div class="door-hd"><div class="door-ic {kind}">{icon}</div><div><div class="door-eye">{eyebrow}</div>'
+                f'<div class="door-t">{title}</div></div></div><p class="door-p">{text}</p>', unsafe_allow_html=True)
+
+
+st.markdown('<div class="signin-hero"><div class="eyebrow-x">Expo 2030 Riyadh · Challenge 5.5 · Sign in to Munjiz</div>'
+            '<div class="hero-line">One request. One ticket. <span class="g">Done.</span></div>'
+            '<div class="hero-ar">طلب واحد. تذكرة واحدة. منجز.</div>'
+            '<div class="hero-sub">Two sides, one ticket between them. <b>Pavilion teams ask; Expo Admin staff decide.</b> '
+            'Each side only sees what it needs.</div></div>', unsafe_allow_html=True)
 
 left, right = st.columns(2, gap="large")
 
 with left:
-    with st.container(border=True):
-        st.markdown("### 📱 Participant\nPavilion teams and their contractors. Sign in with your pavilion code.")
+    with st.container(border=True, key="door_participant"):
+        door("p", PHONE_ICON, "Door 1 · Pavilion teams", "Participant",
+             "Pavilion teams and their contractors. Sign in with your pavilion code.")
         with st.form("participant_form", border=False):
             code = st.text_input("Pavilion code", placeholder="e.g. FRA-2030")
             if st.form_submit_button("Sign in as participant", type="primary", width="stretch"):
@@ -40,8 +56,8 @@ with left:
                     enter(users.sign_in_with_pavilion_code(pcode))
 
 with right:
-    with st.container(border=True):
-        st.markdown("### 🗂️ Expo Admin\nDesk staff, supervisors and organisers.")
+    with st.container(border=True, key="door_admin"):
+        door("a", DESK_ICON, "Door 2 · Expo Admin", "Expo Admin", "Desk staff, supervisors and organisers.")
         staff = [u for u in users.all_users() if u["role"] != users.PARTICIPANT]
 
         def label(uid: str) -> str:

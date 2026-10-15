@@ -48,7 +48,7 @@ def board():
     c[3].metric("Oldest wait", f"{max((x[2]['waited_minutes'] for x in pending), default=0):.0f} min")
 
     def card(desk, sub, info):
-        with st.container(border=True):
+        with st.container(border=True, key=f"glass_sv_{sub['id']}"):
             st.markdown(f"**{sub['id']}** · {desk_title(desk, 'en')} · ticket `{sub['ticket_id']}` · {sub['pavilion']} "
                         f"&nbsp; {sla_pill(info)}" + (f" · reassigned to **{sub['assigned_to']}**" if sub.get("assigned_to") else ""),
                         unsafe_allow_html=True)

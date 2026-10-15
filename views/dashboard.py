@@ -9,21 +9,24 @@ from munjiz.db import connect
 from munjiz.rules import sla
 from views.common import ago, kpi_cards, page_header
 
-# Categorical slots from the validated reference palette; "before" is a recessive neutral.
-DESK_COLOR = {"logistics": "#2a78d6", "security": "#eb6834", "facilities": "#1baf7a"}
-BEFORE, AFTER = "#a3a29c", "#0B6B4F"
+# Brand colours on the dark stage: desert gold, lavender, Expo emerald; "before" is a recessive neutral.
+DESK_COLOR = {"logistics": "#E2B04A", "security": "#A78BFA", "facilities": "#2FBF8A"}
+BEFORE, AFTER = "#5E7268", "#2FBF8A"
+AXIS, GRID, STAGE = "#B5C7BF", "rgba(255,255,255,0.08)", "#0A1A14"
 DESK_NAME = {d: desk_title(d, "en").split(" ", 1)[1] for d in DESKS}
 
 
 def style(fig: go.Figure, height=320) -> go.Figure:
     fig.update_layout(height=height, margin=dict(l=10, r=10, t=36, b=10), bargap=0.35, bargroupgap=0.08,
                       legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, title=None),
-                      font=dict(family="Source Sans Pro, sans-serif", size=13), plot_bgcolor="rgba(0,0,0,0)",
-                      paper_bgcolor="rgba(0,0,0,0)", hoverlabel=dict(font_size=13))
-    fig.update_xaxes(gridcolor="rgba(128,128,128,0.15)", zeroline=False, automargin=True, title_standoff=8,
-                     title_font_size=12)
-    fig.update_yaxes(gridcolor="rgba(0,0,0,0)", automargin=True, ticksuffix="  ")
-    fig.update_traces(marker_line_width=0)
+                      font=dict(family="IBM Plex Sans, -apple-system, Segoe UI, sans-serif", size=13, color=AXIS),
+                      plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                      hoverlabel=dict(font_size=13, bgcolor="#10261D", bordercolor="#2FBF8A", font_color="#EAF3EE"))
+    fig.update_xaxes(gridcolor=GRID, zeroline=False, automargin=True, title_standoff=8, title_font_size=12,
+                     linecolor="rgba(255,255,255,0.12)", tickfont_color=AXIS)
+    fig.update_yaxes(gridcolor="rgba(0,0,0,0)", automargin=True, ticksuffix="  ", tickfont=dict(color="#DCE8E2", size=13))
+    fig.update_traces(marker_line_width=0, textfont=dict(color="#EAF3EE", size=12), constraintext="none", cliponaxis=False,
+                      selector=dict(type="bar"))
     return fig
 
 
@@ -117,7 +120,7 @@ with right:
                             hovertemplate="%{y}<br>" + DESK_NAME[d] + ": %{x} sub-requests<extra></extra>")
                      for d in DESKS if d in counts])
     fig.update_layout(barmode="stack")
-    fig.update_traces(marker_line_color="white")  # 2px gap between stacked segments
+    fig.update_traces(marker_line_color=STAGE)  # 2px gap between stacked segments
     fig.update_xaxes(title="Desk sub-requests")
     st.plotly_chart(style(fig).update_traces(marker_line_width=2), width="stretch", theme=None)
 
